@@ -201,7 +201,7 @@ class Blip(db.Model):
       'user_id'   : self.user_id,
       'longitude' : self.longitude,
       'latitude'  : self.latitude,
-      'timestamp' : dump_datetime(self.timestamp)
+      'timestamp' : self.timestamp.isoformat()
     }
 
 # MAIN RUN

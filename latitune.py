@@ -11,14 +11,12 @@ app    = Flask (__name__)
 heroku = Heroku (app)
 db     = SQLAlchemy (app)
 
-API_BASE_JSON = {"meta":{"status":"ERR"}, "objects":{}}
-
 class API_Response:
   def __init__(self, status="ERR"):
    self.status = "ERR"
 
   def __json__(self):
-    return {"meta":{"status":self.status}, "objects"{}}
+    return {"meta":{"status":self.status}, "objects":{}}
 
 # CONTROLLERS
 

@@ -28,18 +28,18 @@ def index():
 
 @app.route("/api/user", methods=['PUT'])
 def create_user():
-  try:
+  # try:
     if all ([arg in request.args for arg in ['username', 'password', 'email']]):
       new_user = User(request.args['username'],
-                      request.args['password'],
-                      request.args['email'])
+                      request.args['email'],
+                      request.args['password'])
       db.session.add(new_user)
       db.session.commit()
       return jsonify(API_Response("OK").as_dict())
     else:
       raise
-  except:
-    return jsonify(API_Response("ERR").as_dict())
+  # except:
+  #   return jsonify(API_Response("ERR").as_dict())
 
 # MODEL DEFINITIONS
 class User(db.Model):

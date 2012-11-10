@@ -15,7 +15,7 @@ db        = SQLAlchemy (app)
 
 class API_Response:
   def __init__(self, status="ERR"):
-   self.status = "ERR"
+   self.status = status
 
   def as_dict(self):
     return {"meta":{"status":self.status}, "objects":{}}

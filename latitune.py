@@ -14,18 +14,22 @@ heroku    = Heroku (app)
 db        = SQLAlchemy (app)
 
 class API_Response:
-  def __init__(self, status="ERR", error=""):
+  def __init__(self, status="ERR", error="", objs=[]):
    self.status = status
    self.error  = error
+   self.objs   = objs
 
   def as_dict(self):
-    return {"meta":{"status":self.status,"error":self.error}, "objects":{}}
+    return {"meta"    : {"status":self.status,"error":self.error},
+            "objects" : objs}
 
 # CONTROLLERS
 
 @app.route("/")
 def index():
   return "Hello Latitune!"
+
+# USERS
 
 @app.route("/api/user", methods=['PUT'])
 def create_user():
@@ -41,6 +45,20 @@ def create_user():
       raise Exception
   except Exception as e:
     return jsonify(API_Response("ERR", str(e)).as_dict())
+
+# BLIPS
+
+@app.route("/api/blip", methods=['GET'])
+def get_blip():
+  if 'id' in request.args:
+    blip_id = request.args['id']
+    blip = Blip.query.filter_by(id=blip_id)
+    return jsonify(API_Response("OK", "", dict(blip)))
+
+@app.route("/api/blip", methods=['PUT'])
+def create_blip():
+  return None
+
 
 # MODEL DEFINITIONS
 class User(db.Model):

@@ -7,9 +7,11 @@ from flask.ext.sqlalchemy import SQLAlchemy
 # for password hashing
 from werkzeug.security import generate_password_hash, check_password_hash
 
-app    = Flask (__name__)
-heroku = Heroku (app)
-db     = SQLAlchemy (app)
+app       = Flask (__name__)
+app.debug = True
+
+heroku    = Heroku (app)
+db        = SQLAlchemy (app)
 
 class API_Response:
   def __init__(self, status="ERR"):

@@ -30,7 +30,7 @@ class User(db.Model):
   name    = db.Column(db.String(80))
   email   = db.Column(db.String(120), unique  = True)
   pw_hash = db.Column(db.String(120))
-  blip    = relationship("Blip", backref="user")
+  blip    = db.relationship("Blip", backref="user")
 
   def __init__(self, name, email, password):
     self.name = name
@@ -53,7 +53,7 @@ class Song(db.Model):
   provider_song_id = db.Column(db.String(200))
   provider_key     = db.Column(db.Enum('Spotify','Youtube',
                                        name='provider_key'))
-  blip             = relationship("Blip", backref="song")
+  blip             = db.relationship("Blip", backref="song")
 
 class Blip(db.Model):
   __tablename__ = 'blip'

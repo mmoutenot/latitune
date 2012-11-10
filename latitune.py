@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask
 from flask_heroku import Heroku
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -29,6 +30,7 @@ class User(db.Model):
   name    = db.Column(db.String(80))
   email   = db.Column(db.String(120), unique  = True)
   pw_hash = db.Column(db.String(120))
+  blip    = relationship("Blip", backref="user")
 
   def __init__(self, name, email, password):
     self.name = name
@@ -49,11 +51,17 @@ class Song(db.Model):
   title            = db.Column(db.String(120))
   album            = db.Column(db.String(80))
   provider_song_id = db.Column(db.String(200))
-  provider_key     = db.Column(db.Enum('Spotify','Youtube', name='provider_key')
+  provider_key     = db.Column(db.Enum('Spotify','Youtube',
+                                       name='provider_key'))
   blip             = relationship("Blip", backref="song")
 
 class Blip(db.Model):
   __tablename__ = 'blip'
 
-  id = db.Column(db.Integer, primary_key = True)
-  song_id = db.Column(db.Integer, ForeignKey('song.id'))
+  id        = db.Column(db.Integer, primary_key = True)
+  song_id   = db.Column(db.Integer, ForeignKey('song.id'))
+  user_id   = db.Column(db.Integer, ForeignKey('user.id'))
+  longitude = db.Column(db.Float)
+  latitude  = db.Column(db.Float)
+  timestamp = db.Column(db.DateTime, default=datetime.now)
+

@@ -53,7 +53,7 @@ def get_blip():
   if all([arg in request.args for arg in ['latitude','longitude']]):
     lat = request.args['latitude']
     lng = request.args['longitude']
-    db.commit()    
+    db.session.commit()    
     query = "SELECT id, " \
       "( 3959 * acos( cos( radians(37) ) * cos( radians( %(lat)i ) ) * " \
       "cos( radians( %(lng)i ) - radians(-122) ) + sin( radians(37) ) * " \

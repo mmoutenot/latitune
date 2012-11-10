@@ -62,12 +62,20 @@ def get_blip():
 def create_blip():
   try:
     if all ([arg in request.form for arg in
-             ['song_id','user_id','longitude','latitude']]):
+             ['artist','album','title','longitude',
+                    'latitude','user_id','pw_hash']]):
+
+      new_song = Song(request.form['artist'],
+                      request.form['album'],
+                      request.form['title'])
+      db.session.add(new_song)
+
       new_blip = Blip(request.form['song_id'],
                       request.form['user_id'],
                       request.form['longitude'],
                       request.form['latitude'])
       db.session.add(new_blip)
+
       db.session.commit()
       return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
     else:
@@ -119,6 +127,25 @@ class Song(db.Model):
                                        name='provider_key'))
   blip             = db.relationship("Blip", backref="song")
 
+  def __init__(self, artist, title, album):
+    self.artist = artist
+    self.title  = title
+    self.album  = album
+
+    # TODO:we need to access the services to determine 'provider_song_id'
+
+  @property
+  def serialize(self):
+    return {
+      'id'               : self.id,
+      'artist'           : self.artist,
+      'title'            : self.title,
+      'album'            : self.album,
+      'provider_song_id' : self.provider_song_id,
+      'provider_key'     : str(self.provider_key)
+    }
+
+
 class Blip(db.Model):
   __tablename__ = 'blip'
 
@@ -137,12 +164,13 @@ class Blip(db.Model):
 
   @property
   def serialize(self):
+    song = Song.query.filter_by(id=self.song_id).first()
     return {
-      'id' : self.id,
-      'song_id' : self.song_id,
-      'user_id' : self.user_id,
+      'id'        : self.id,
+      'song'      : song.serialize,
+      'user_id'   : self.user_id,
       'longitude' : self.longitude,
-      'latitude' : self.latitude,
+      'latitude'  : self.latitude,
       'timestamp' : dump_datetime(self.timestamp)
     }
 

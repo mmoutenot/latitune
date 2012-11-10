@@ -14,7 +14,7 @@ heroku    = Heroku (app)
 db        = SQLAlchemy (app)
 
 class API_Response:
-  def __init__(self, status="ERR", error="", objs=[]):
+  def __init__(self, status="ERR", objs=[], error=""):
    self.status = status
    self.error  = error
    self.objs   = objs
@@ -40,11 +40,11 @@ def create_user():
                       request.form['password'])
       db.session.add(new_user)
       db.session.commit()
-      return jsonify(API_Response("OK", "").as_dict())
+      return jsonify(API_Response("OK", [{'user_id':new_user.id}]).as_dict())
     else:
       raise Exception
   except Exception as e:
-    return jsonify(API_Response("ERR", str(e)).as_dict())
+    return jsonify(API_Response("ERR", [], str(e)).as_dict())
 
 # BLIPS
 
@@ -54,12 +54,26 @@ def get_blip():
     blip_id = request.args['id']
     blip = Blip.query.filter_by(id=blip_id).first()
     if blip:
-      return jsonify(API_Response("OK", "", [dict(blip)]).as_dict())
+      return jsonify(API_Response("OK", [dict(blip)]).as_dict())
     else:
-      return jsonify(API_Response("ERR", "No blip with that ID").as_dict())
+      return jsonify(API_Response("ERR", [], "No blip with that ID").as_dict())
 
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():
+  try:
+    if all ([arg in request.form for arg in
+             ['song_id','user_id','longitude','latitude']]):
+      new_blip = Blip(request.form['song_id'],
+                      request.form['user_id'],
+                      request.form['longitude'],
+                      request.form['latitude'])
+      db.session.add(new_blip)
+      db.session.commit()
+      return jsonify(API_Response("OK", [{'blip_id':new_blip.id}]).as_dict())
+    else:
+      raise Exception
+  except Exception as e:
+    return jsonify(API_Response("ERR", [], str(e)).as_dict())
   return None
 
 
@@ -105,6 +119,12 @@ class Blip(db.Model):
   longitude = db.Column(db.Float)
   latitude  = db.Column(db.Float)
   timestamp = db.Column(db.DateTime, default=datetime.now)
+
+  def __init__(self, song_id, user_id, longitude, latitude, timestamp):
+    self.song_id   = song_id
+    self.user_id   = user_id
+    self.longitude = longitude
+    self.latitude  = latitude
 
 # MAIN RUN
 

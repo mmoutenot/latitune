@@ -98,6 +98,15 @@ class User(db.Model):
   def check_password(self, password):
     return check_password_hash(self.pw_hash, password)
 
+  @property
+  def serialize(self):
+    """Return object data in easily serializeable format"""
+    return {
+      'id' : self.id,
+      'name' : self.name,
+      'email' :self.email,
+    }
+
 class Song(db.Model):
   __tablename__ = 'song'
 

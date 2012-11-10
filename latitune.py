@@ -35,11 +35,11 @@ def create_user():
                       request.args['email'])
       db.session.add(new_user)
       db.session.commit()
-      return jsonify(API_Response("OK"))
+      return jsonify.encode(API_Response("OK"))
     else:
       raise
   except:
-    return jsonify(API_Response("ERR"))
+    return jsonify.encode(API_Response("ERR"))
 
 # MODEL DEFINITIONS
 class User(db.Model):

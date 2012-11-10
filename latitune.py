@@ -1,9 +1,14 @@
 import os
 from flask import Flask
-app = Flask(__name__)
+from flask_heroku import Heroku
+from flask.ext.sqlalchemy import SQLAlchemy
+
+app    = Flask (__name__)
+heroku = Heroku (app)
+db     = SQLAlchemy (app)
 
 @app.route("/")
-def hello():
+def index():
   return "Hello Latitune!"
 
 if __name__ == "__main__":

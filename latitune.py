@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_heroku import Heroku
 from flask.ext.sqlalchemy import SQLAlchemy
 

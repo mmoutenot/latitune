@@ -65,21 +65,15 @@ def get_blip():
 def create_blip():
   try:
     if all ([arg in request.form for arg in
-             ['artist','album','title','longitude',
+             ['song_id','longitude',
                     'latitude','user_id','pw_hash']]):
-
-      new_song = Song(request.form['artist'],
-                      request.form['album'],
-                      request.form['title'])
-      db.session.add(new_song)
-
       new_blip = Blip(request.form['song_id'],
                       request.form['user_id'],
                       request.form['longitude'],
                       request.form['latitude'])
       db.session.add(new_blip)
-
       db.session.commit()
+
       return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
     else:
       raise Exception
@@ -159,7 +153,7 @@ class Blip(db.Model):
   latitude  = db.Column(db.Float)
   timestamp = db.Column(db.DateTime, default=datetime.now)
 
-  def __init__(self, song_id, user_id, longitude, latitude, timestamp):
+  def __init__(self, song_id, user_id, longitude, latitude):
     self.song_id   = song_id
     self.user_id   = user_id
     self.longitude = longitude

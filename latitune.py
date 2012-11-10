@@ -59,7 +59,7 @@ def get_blip():
         acos( sin( radians(latitude) )) * sin(radians( %(lat)i )) +
         cos(latitude)*cos(radians( %(lat)i ))*cos(radians(%(lng)i-longitude))*3959
       AS distance from blip 
-      order by distance limit 25""" % {'lat': float(lat), 'lng': float(lng)}
+      order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
     blips = Blip.query.from_statement(query).all()
     return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
   elif 'id' in request.args:

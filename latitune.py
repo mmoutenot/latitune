@@ -54,7 +54,7 @@ def get_blip():
     blip_id = request.args['id']
     blip = Blip.query.filter_by(id=blip_id).first()
     if blip:
-      return jsonify(API_Response("OK", "", [dict(blip)]))
+      return jsonify(API_Response("OK", "", [dict(blip)]).as_dict())
     else:
       return jsonify(API_Response("ERR", "No blip with that ID").as_dict())
 

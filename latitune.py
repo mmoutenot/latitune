@@ -21,7 +21,7 @@ class API_Response:
 
   def as_dict(self):
     return {"meta"    : {"status":self.status,"error":self.error},
-            "objects" : objs}
+            "objects" : self.objs}
 
 # CONTROLLERS
 

@@ -59,8 +59,8 @@ class Blip(db.Model):
   __tablename__ = 'blip'
 
   id        = db.Column(db.Integer, primary_key = True)
-  song_id   = db.Column(db.Integer, ForeignKey('song.id'))
-  user_id   = db.Column(db.Integer, ForeignKey('user.id'))
+  song_id   = db.Column(db.Integer, db.ForeignKey('song.id'))
+  user_id   = db.Column(db.Integer, db.ForeignKey('user.id'))
   longitude = db.Column(db.Float)
   latitude  = db.Column(db.Float)
   timestamp = db.Column(db.DateTime, default=datetime.now)

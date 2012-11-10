@@ -39,7 +39,7 @@ def create_user():
       return jsonify(API_Response("OK", "").as_dict())
     else:
       raise Exception
-  except Exception, e:
+  except Exception as e:
     return jsonify(API_Response("ERR", e).as_dict())
 
 # MODEL DEFINITIONS

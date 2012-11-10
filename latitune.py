@@ -53,7 +53,7 @@ def get_blip():
   if 'id' in request.args:
     blip_id = request.args['id']
     blip = Blip.query.filter_by(id=blip_id)
-    return jsonify(API_Response("OK", "", dict(blip)))
+    return jsonify(API_Response("OK", "", [dict(blip)]))
 
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():

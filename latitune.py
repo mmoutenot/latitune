@@ -135,6 +135,17 @@ class Blip(db.Model):
     self.longitude = longitude
     self.latitude  = latitude
 
+  @property
+  def serialize(self):
+    return {
+      'id' : self.id,
+      'song_id' : self.song_id,
+      'user_id' : self.user_id,
+      'longitude' : self.longitude,
+      'latitude' : self.latitude,
+      'timestamp' : dump_datetime(self.timestamp)
+    }
+
 # MAIN RUN
 
 if __name__ == "__main__":

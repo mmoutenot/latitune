@@ -14,11 +14,12 @@ heroku    = Heroku (app)
 db        = SQLAlchemy (app)
 
 class API_Response:
-  def __init__(self, status="ERR"):
+  def __init__(self, status="ERR", error=""):
    self.status = status
+   self.error  = error
 
   def as_dict(self):
-    return {"meta":{"status":self.status}, "objects":{}}
+    return {"meta":{"status":self.status,"error":self.error}, "objects":{}}
 
 # CONTROLLERS
 
@@ -30,16 +31,16 @@ def index():
 def create_user():
   try:
     if all ([arg in request.form for arg in ['username','email','password']]):
-      new_user = User(request.form['username'].first,
-                      request.form['email'].first,
-                      request.form['password'].first)
+      new_user = User(request.form['username'][0],
+                      request.form['email'][0],
+                      request.form['password'][0])
       db.session.add(new_user)
       db.session.commit()
-      return jsonify(API_Response("OK").as_dict())
+      return jsonify(API_Response("OK", "").as_dict())
     else:
       raise Exception
   except Exception, e:
-    return jsonify(API_Response("ERR").as_dict())
+    return jsonify(API_Response("ERR", e).as_dict())
 
 # MODEL DEFINITIONS
 class User(db.Model):

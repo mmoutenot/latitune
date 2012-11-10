@@ -29,7 +29,7 @@ def index():
 @app.route("/api/user", methods=['PUT'])
 def create_user():
   # try:
-    return str(request.args)
+    return jsonify(request.form)
     if all ([arg in request.args for arg in ['username', 'email', 'password']]):
       new_user = User(request.args['username'],
                       request.args['email'],

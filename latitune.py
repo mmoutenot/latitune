@@ -54,9 +54,9 @@ def get_blip():
     lat = request.args['latitude']
     lng = request.args['longitude']
     db.session.commit()    
-    query = "SELECT id, " \
+    query = "SELECT id, longitude, latitude " \
       "( 3959 * acos( cos( radians(37) ) * cos( radians( %(lat)i ) ) * " \
-      "cos( radians( %(lng)i ) - radians(-122) ) + sin( radians(37) ) * " \
+      "cos( radians( %(lng)i ) - radians(longitude) ) + sin( radians(latitude) ) * " \
       "sin( radians( %(lat)i ) ) ) ) AS distance from blip " \
       "order by distance limit 25" % {'lat': float(lat), 'lng': float(lng)}
     blips = Blip.query.from_statement(query).all()

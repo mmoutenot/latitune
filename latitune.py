@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from flask import Flask
+from flask import Flask, jsonify
 from flask_heroku import Heroku
 from flask.ext.sqlalchemy import SQLAlchemy
 
@@ -11,24 +11,44 @@ app    = Flask (__name__)
 heroku = Heroku (app)
 db     = SQLAlchemy (app)
 
+API_BASE_JSON = {"meta":{"status":"ERR"}, "objects":{}}
+
+class API_Response:
+  def __init__(self, status="ERR"):
+   self.status = "ERR"
+
+  def __json__(self):
+    return {"meta":{"status":self.status}, "objects"{}}
+
 # CONTROLLERS
 
 @app.route("/")
 def index():
   return "Hello Latitune!"
 
-if __name__ == "__main__":
-  # Bind to PORT if defined, otherwise default to 5000.
-  port = int(os.environ.get('PORT', 5000))
-  app.run(host='0.0.0.0', port=port)
+@app.route("/api/user", methods=['PUT'])
+def create_user():
+  try:
+    if all ([arg in request.args for arg in ['username', 'password', 'email']]):
+      new_user = User(request.args['username'],
+                      request.args['password'],
+                      request.args['email'])
+      db.session.add(new_user)
+      db.session.commit()
+      return jsonify(API_Response("OK"))
+    else:
+      raise
+  except e:
+    print(e)
+    return jsonify(API_Response("ERR"))
 
 # MODEL DEFINITIONS
 class User(db.Model):
   __tablename__ = 'user'
 
   id      = db.Column(db.Integer, primary_key = True)
-  name    = db.Column(db.String(80))
-  email   = db.Column(db.String(120), unique  = True)
+  name    = db.Column(db.String(80), unique = True)
+  email   = db.Column(db.String(120), unique = True)
   pw_hash = db.Column(db.String(120))
   blip    = db.relationship("Blip", backref="user")
 
@@ -64,4 +84,11 @@ class Blip(db.Model):
   longitude = db.Column(db.Float)
   latitude  = db.Column(db.Float)
   timestamp = db.Column(db.DateTime, default=datetime.now)
+
+# MAIN RUN
+
+if __name__ == "__main__":
+  # Bind to PORT if defined, otherwise default to 5000.
+  port = int(os.environ.get('PORT', 5000))
+  app.run(host='0.0.0.0', port=port)
 

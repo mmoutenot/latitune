@@ -130,12 +130,12 @@ class Song(db.Model):
                                        name='provider_key'))
   blip             = db.relationship("Blip", backref="song")
 
-  def __init__(self, artist, title, album):
+  def __init__(self, artist, title, album, provider_song_id, provider_key):
     self.artist = artist
     self.title  = title
     self.album  = album
-
-    # TODO:we need to access the services to determine 'provider_song_id'
+    self.provider_song_id = provider_song_id
+    self.provider_key = provider_key
 
   @property
   def serialize(self):

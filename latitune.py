@@ -54,9 +54,12 @@ def get_blip():
     blip_id = request.args['id']
     blip = Blip.query.filter_by(id=blip_id).first()
     if blip:
-      return jsonify(API_Response("OK", [dict(blip)]).as_dict())
+      return jsonify(API_Response("OK", [blip.serialize]).as_dict())
     else:
       return jsonify(API_Response("ERR", [], "No blip with that ID").as_dict())
+  else:
+    blips = Blip.query.all()
+    return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
 
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():

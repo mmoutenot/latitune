@@ -56,7 +56,7 @@ def get_blip():
     if blip:
       return jsonify(API_Response("OK", "", [dict(blip)]))
     else:
-      return jsonify(API_Response("ERR", "No blip with that ID"))
+      return jsonify(API_Response("ERR", "No blip with that ID").as_dict())
 
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():

@@ -17,7 +17,7 @@ class API_Response:
   def __init__(self, status="ERR"):
    self.status = "ERR"
 
-  def __json__(self):
+  def as_dict(self):
     return {"meta":{"status":self.status}, "objects":{}}
 
 # CONTROLLERS
@@ -35,11 +35,11 @@ def create_user():
                       request.args['email'])
       db.session.add(new_user)
       db.session.commit()
-      return jsonify.encode(API_Response("OK"))
+      return jsonify(API_Response("OK").as_dict())
     else:
       raise
   except:
-    return jsonify.encode(API_Response("ERR"))
+    return jsonify(API_Response("ERR").as_dict())
 
 # MODEL DEFINITIONS
 class User(db.Model):

@@ -38,8 +38,7 @@ def create_user():
       return jsonify(API_Response("OK"))
     else:
       raise
-  except e:
-    print(e)
+  except:
     return jsonify(API_Response("ERR"))
 
 # MODEL DEFINITIONS

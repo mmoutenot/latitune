@@ -40,7 +40,7 @@ def create_user():
                       request.form['password'])
       db.session.add(new_user)
       db.session.commit()
-      return jsonify(API_Response("OK", [dict(new_user)]).as_dict())
+      return jsonify(API_Response("OK", [new_user.serialize]).as_dict())
     else:
       raise Exception
   except Exception as e:
@@ -69,7 +69,7 @@ def create_blip():
                       request.form['latitude'])
       db.session.add(new_blip)
       db.session.commit()
-      return jsonify(API_Response("OK", [dict(new_blip.id)]).as_dict())
+      return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
     else:
       raise Exception
   except Exception as e:

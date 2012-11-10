@@ -104,7 +104,7 @@ def create_song():
             'provider_key','provider_song_id']]):
       new_song = Song(request.form['artist'], request.form['title'],
                       request.form['album'], request.form['provider_song_id'],
-                      request.form['provider_key']))
+                      request.form['provider_key'])
       db.session.add(new_song)
       db.session.commit()
       return jsonify(API_Response("OK", [new_song.serialize]).as_dict())

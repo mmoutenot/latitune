@@ -30,16 +30,16 @@ def index():
 def create_user():
   # try:
     if all ([arg in request.form for arg in ['username','email','password']]):
-      new_user = User(request.form['username'],
-                      request.form['email'],
-                      request.form['password'])
+      new_user = User(request.form['username'].first,
+                      request.form['email'].first,
+                      request.form['password'].first)
       db.session.add(new_user)
       db.session.commit()
       return jsonify(API_Response("OK").as_dict())
-    # else:
-      # raise
-  # except:
-  #   return jsonify(API_Response("ERR").as_dict())
+    else:
+      raise
+  except:
+    return jsonify(API_Response("ERR").as_dict())
 
 # MODEL DEFINITIONS
 class User(db.Model):

@@ -78,15 +78,36 @@ def create_blip():
   try:
     if all ([arg in request.form for arg in
              ['song_id','longitude',
-                    'latitude','user_id','pw_hash']]):
-      new_blip = Blip(request.form['song_id'],
-                      request.form['user_id'],
-                      request.form['longitude'],
-                      request.form['latitude'])
-      db.session.add(new_blip)
-      db.session.commit()
+                    'latitude','user_id','password']]):
+      usr = User.query.filter_by(id=request.form['user_id']).first()
+      if usr.check_password(request.form['password']):
+        new_blip = Blip(request.form['song_id'],  
+                        request.form['user_id'],
+                        request.form['longitude'],
+                        request.form['latitude'])
+        db.session.add(new_blip)  
+        db.session.commit()
+        return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
+      else:
+        raise Exception
+    else:
+      raise Exception
+  except Exception as e:
+    return jsonify(API_Response("ERR", [], str(e)).as_dict())
+  return None
 
-      return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
+@app.route("/api/song",methods=['PUT'])
+def create_song():
+  try:
+    if all([arg in request.form for arg in
+            ['artist','album','title',
+            'provider_key','provider_song_id']]):
+      new_song = Song(request.form['artist'], request.form['title'],
+                      request.form['album'], request.form['provider_song_id'],
+                      request.form['provider_key']))
+      db.session.add(new_song)
+      db.session.commit()
+      return jsonify(API_Response("OK", [new_song.serialize]).as_dict())
     else:
       raise Exception
   except Exception as e:

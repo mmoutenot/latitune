@@ -7,6 +7,14 @@ from flask.ext.sqlalchemy import SQLAlchemy
 # for password hashing
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# for youtube song matching
+import gdata.youtube
+import gdata.youtube.service
+
+yt_service = gdata.youtube.service.YouTubeService()
+yt_service.developer_key = 'ABCxyz123...'
+yt_service.client_id = 'My-Client_id'
+
 app       = Flask (__name__)
 app.debug = True
 
@@ -186,6 +194,14 @@ class Song(db.Model):
     self.artist = artist
     self.title  = title
     self.album  = album
+
+    query = gdata.youtube.service.YouTubeVideoQuery()
+    query.vq = title + " " + artist
+    query.orderby = 'relevance'
+    query.racy = 'include'
+    feed = yt_service.YouTubeQuery(query)
+    PrintVideoFeed(feed)
+
     self.provider_song_id = provider_song_id
     self.provider_key = provider_key
 

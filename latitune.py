@@ -60,32 +60,39 @@ def get_user_id():
         return jsonify(API_Response("ERR", [], "Authentication failed"))
       # user is properly authenticated!
       return jsonify(API_Response("OK", [user.serialize]).as_dict())
+    else:
+      raise Exception
+  except Exception as e:
+    return jsonify(API_Response("ERR", [], str(e)).as_dict())
 
 # BLIPS
 
 @app.route("/api/blip", methods=['GET'])
 def get_blip():
-  if all([arg in request.args for arg in ['latitude','longitude']]):
-    lat = request.args['latitude']
-    lng = request.args['longitude']
-    db.session.commit()
-    query = """
-      SELECT id, longitude, latitude,
-        (3959*acos(cos(radians(%(lat)i))*cos(radians(latitude))*cos(radians(longitude)-radians(%(lng)i))+sin(radians(%(lat)i))*sin(radians(latitude))))
-      AS distance from blip
-      order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
-    blips = Blip.query.from_statement(query).all()
-    return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
-  elif 'id' in request.args:
-    blip_id = request.args['id']
-    blip = Blip.query.filter_by(id=blip_id).first()
-    if blip:
-      return jsonify(API_Response("OK", [blip.serialize]).as_dict())
+  try:
+    if all([arg in request.args for arg in ['latitude','longitude']]):
+      lat = request.args['latitude']
+      lng = request.args['longitude']
+      db.session.commit()
+      query = """
+        SELECT id, longitude, latitude,
+          (3959*acos(cos(radians(%(lat)i))*cos(radians(latitude))*cos(radians(longitude)-radians(%(lng)i))+sin(radians(%(lat)i))*sin(radians(latitude))))
+        AS distance from blip
+        order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
+      blips = Blip.query.from_statement(query).all()
+      return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
+    elif 'id' in request.args:
+      blip_id = request.args['id']
+      blip = Blip.query.filter_by(id=blip_id).first()
+      if blip:
+        return jsonify(API_Response("OK", [blip.serialize]).as_dict())
+      else:
+        return jsonify(API_Response("ERR", [], "No blip with that ID").as_dict())
     else:
-      return jsonify(API_Response("ERR", [], "No blip with that ID").as_dict())
-  else:
-    blips = Blip.query.all()
-    return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
+      blips = Blip.query.all()
+      return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
+  except Exception as e:
+    return jsonify(API_Response("ERR", [], str(e)).as_dict())
 
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():

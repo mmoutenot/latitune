@@ -189,7 +189,7 @@ class Song(db.Model):
                                        name='provider_key'))
   blip             = db.relationship("Blip", backref="song")
 
-  def __init__(self, artist, title, album, provider_song_id, provider_key):
+  def __init__(self, artist, title, album="", provider_key="Youtube"):
     self.artist = artist
     self.title  = title
     self.album  = album

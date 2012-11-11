@@ -130,15 +130,11 @@ def create_blip():
 def create_song():
   try:
     if all([arg in request.form for arg in
-            ['artist','album','title',
-            'provider_key','provider_song_id']]):
+            ['artist','title']]):
       new_song = Song.query.filter_by(artist=request.form['artist'],
-                                      title=request.form['title']
-                                      album=request.form['album']).all().first()
+                                      title=request.form['title']).all().first()
       if not new_song:
-        new_song = Song(request.form['artist'], request.form['title'],
-                      request.form['album'], request.form['provider_song_id'],
-                      request.form['provider_key'])
+        new_song = Song(request.form['artist'], request.form['title'])
         db.session.add(new_song)
         db.session.commit()
       return jsonify(API_Response("OK", [new_song.serialize]).as_dict())
@@ -193,7 +189,7 @@ class Song(db.Model):
                                        name='provider_key'))
   blip             = db.relationship("Blip", backref="song")
 
-  def __init__(self, artist, title, album, provider_song_id, provider_key):
+  def __init__(self, artist, title, album="", provider_key="Youtube"):
     self.artist = artist
     self.title  = title
     self.album  = album

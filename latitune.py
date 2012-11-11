@@ -141,7 +141,7 @@ def create_song():
     else:
       raise Exception
   except Exception as e:
-    return jsonify(API_Response("ERR", [], str(e)).as_dict())
+    return jsonify(API_Response("ERR", [], request.form)
   return None
 
 ##################################################

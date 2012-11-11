@@ -132,7 +132,7 @@ def create_song():
     if all([arg in request.form for arg in
             ['artist','title']]):
       new_song = Song.query.filter_by(artist=request.form['artist'],
-                                      title=request.form['title']).all().first()
+                                      title=request.form['title']).first()
       if not new_song:
         new_song = Song(request.form['artist'], request.form['title'])
         db.session.add(new_song)

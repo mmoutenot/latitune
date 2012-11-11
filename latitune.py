@@ -12,8 +12,8 @@ import gdata.youtube
 import gdata.youtube.service
 
 yt_service = gdata.youtube.service.YouTubeService()
-yt_service.developer_key = 'ABCxyz123...'
-yt_service.client_id = 'My-Client_id'
+yt_service.developer_key =
+'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46XM_KxWn5KtwdrAZp6WeMF9Jrzk-sXabs0R_F9T9MHZdiOYA'
 
 app       = Flask (__name__)
 app.debug = True

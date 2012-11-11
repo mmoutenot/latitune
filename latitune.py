@@ -199,7 +199,8 @@ class Song(db.Model):
     query.orderby = 'relevance'
     query.racy = 'include'
     feed = yt_service.YouTubeQuery(query)
-    PrintVideoFeed(feed)
+    first_feed = feed.entry[0]
+    print(first_feed)
 
     self.provider_song_id = provider_song_id
     self.provider_key = provider_key

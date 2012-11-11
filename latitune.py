@@ -54,9 +54,9 @@ def create_user():
 @app.route("/api/user", methods=['GET'])
 def get_user_id():
   try:
-    if all ([arg in request.form for arg in ['username','password']]):
-      user = User.query.filter_by(name=request.form['username']).first()
-      if not user or not user.check_password(request.form['password']):
+    if all ([arg in request.args for arg in ['username','password']]):
+      user = User.query.filter_by(name=request.args['username']).first()
+      if not user or not user.check_password(request.args['password']):
         return jsonify(API_Response("ERR", [], "Authentication failed"))
       # user is properly authenticated!
       return jsonify(API_Response("OK", [user.serialize]).as_dict())

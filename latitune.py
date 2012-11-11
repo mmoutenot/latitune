@@ -13,6 +13,9 @@ app.debug = True
 heroku    = Heroku (app)
 db        = SQLAlchemy (app)
 
+##
+# Helper to build json responses for API endpoints
+##
 class API_Response:
   def __init__(self, status="ERR", objs=[], error=""):
    self.status = status
@@ -23,13 +26,15 @@ class API_Response:
     return {"meta"    : {"status":self.status,"error":self.error},
             "objects" : self.objs}
 
+##################################################
 # CONTROLLERS
+##################################################
 
 @app.route("/")
 def index():
   return "Hello Latitune!"
 
-# USERS
+# USER
 
 @app.route("/api/user", methods=['PUT'])
 def create_user():
@@ -46,6 +51,16 @@ def create_user():
   except Exception as e:
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
 
+@app.route("/api/user", methods=['GET'])
+def get_user_id():
+  try:
+    if all ([arg in request.form for arg in ['username','password']]):
+      user = User.query.filter_by(name=request.form['username']).first()
+      if not user or not user.check_password(request.form['password']):
+        return jsonify(API_Response("ERR", [], "Authentication failed"))
+      # user is properly authenticated!
+      return jsonify(API_Response("OK", [user.serialize]).as_dict())
+
 # BLIPS
 
 @app.route("/api/blip", methods=['GET'])
@@ -53,11 +68,11 @@ def get_blip():
   if all([arg in request.args for arg in ['latitude','longitude']]):
     lat = request.args['latitude']
     lng = request.args['longitude']
-    db.session.commit()    
+    db.session.commit()
     query = """
-      SELECT id, longitude, latitude, 
+      SELECT id, longitude, latitude,
         (3959*acos(cos(radians(%(lat)i))*cos(radians(latitude))*cos(radians(longitude)-radians(%(lng)i))+sin(radians(%(lat)i))*sin(radians(latitude))))
-      AS distance from blip 
+      AS distance from blip
       order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
     blips = Blip.query.from_statement(query).all()
     return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
@@ -72,7 +87,6 @@ def get_blip():
     blips = Blip.query.all()
     return jsonify(API_Response("OK",[blip.serialize for blip in blips]).as_dict())
 
-
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():
   try:
@@ -81,11 +95,11 @@ def create_blip():
                     'latitude','user_id','password']]):
       usr = User.query.filter_by(id=request.form['user_id']).first()
       if usr.check_password(request.form['password']):
-        new_blip = Blip(request.form['song_id'],  
+        new_blip = Blip(request.form['song_id'],
                         request.form['user_id'],
                         request.form['longitude'],
                         request.form['latitude'])
-        db.session.add(new_blip)  
+        db.session.add(new_blip)
         db.session.commit()
         return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
       else:
@@ -95,6 +109,8 @@ def create_blip():
   except Exception as e:
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
   return None
+
+# SONG
 
 @app.route("/api/song",methods=['PUT'])
 def create_song():
@@ -114,8 +130,10 @@ def create_song():
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
   return None
 
-
+##################################################
 # MODEL DEFINITIONS
+##################################################
+
 class User(db.Model):
   __tablename__ = 'user'
 

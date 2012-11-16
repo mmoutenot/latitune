@@ -16,8 +16,7 @@ yt_service.developer_key = 'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46X
 
 app       = Flask (__name__)
 app.debug = True
-
-heroku    = Heroku (app)
+heroku = None
 db        = SQLAlchemy (app)
 
 ##
@@ -36,10 +35,6 @@ class API_Response:
 ##################################################
 # CONTROLLERS
 ##################################################
-
-@app.route("/")
-def index():
-  return "Hello Latitune!"
 
 # USER
 
@@ -130,18 +125,18 @@ def create_blip():
 def create_song():
   try:
     if all([arg in request.form for arg in
-            ['artist','album','title',
-            'provider_key','provider_song_id']]):
-      new_song = Song(request.form['artist'], request.form['title'],
-                      request.form['album'], request.form['provider_song_id'],
-                      request.form['provider_key'])
-      db.session.add(new_song)
-      db.session.commit()
+            ['artist','title']]):
+      new_song = Song.query.filter_by(artist=request.form['artist'],
+                                      title=request.form['title']).first()
+      if not new_song:
+        new_song = Song(request.form['artist'], request.form['title'])
+        db.session.add(new_song)
+        db.session.commit()
       return jsonify(API_Response("OK", [new_song.serialize]).as_dict())
     else:
       raise Exception
   except Exception as e:
-    return jsonify(API_Response("ERR", [], str(e)).as_dict())
+    return jsonify(API_Response("ERR", [], request.form).as_dict())
   return None
 
 ##################################################
@@ -247,6 +242,7 @@ class Blip(db.Model):
 # MAIN RUN
 
 if __name__ == "__main__":
+  heroku    = Heroku(app)
   # Bind to PORT if defined, otherwise default to 5000.
   port = int(os.environ.get('PORT', 5000))
   app.run(host='0.0.0.0', port=port)

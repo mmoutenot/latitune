@@ -36,10 +36,6 @@ class API_Response:
 # CONTROLLERS
 ##################################################
 
-@app.route("/")
-def index():
-  return "Hello Latitune!"
-
 # USER
 
 @app.route("/api/user", methods=['PUT'])

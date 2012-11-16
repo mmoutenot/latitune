@@ -45,7 +45,7 @@ class latituneTestCase(unittest.TestCase):
      	latitune.db.session.add(song)
      	latitune.db.session.commit()
      	serialized = song.serialize
-     	assert serialized == {"id":1,"artist":"The Kinks","title":"Big Sky","album":"","provider_key":"Youtube","provider_song_id":"wiyrFSSG5_g"}
+     	assert serialized == {"id":1,"artist":"The Kinks","title":"Big Sky","album":"","provider_key":"Youtube","provider_song_id":"wiyrFSSG5_g"}    	
 
 
 if __name__ == '__main__':

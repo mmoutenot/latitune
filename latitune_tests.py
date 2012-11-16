@@ -99,7 +99,7 @@ class latituneTestCase(unittest.TestCase):
   	assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""}, "objects": [{"email": "benweitzman@gmail.com", "id": 1, "name": "ben"}]}
   def test_new_user_returns_proper_error_with_bad_data(self):
   	rv = self.app.put("/api/user")
-  	assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":""}}
+  	assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
 
 if __name__ == '__main__':
   unittest.main()

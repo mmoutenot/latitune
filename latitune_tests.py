@@ -101,5 +101,19 @@ class latituneTestCase(unittest.TestCase):
     rv = self.app.put("/api/user")
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
 
+  def test_new_user_is_duplicate(self):
+  	rv = self.app.put("/api/user",data=dict(
+  	  username="ben",
+      password="testpass",
+      email="benweitzman@gmail.com"	
+  	))
+	rv = self.app.put("/api/user",data=dict(
+  	  username="ben",
+      password="testpass",
+      email="benweitzman@gmail.com"	
+  	))
+	assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Username or email already exists"},"objects":[]}
+
+
 if __name__ == '__main__':
   unittest.main()

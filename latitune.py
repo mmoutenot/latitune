@@ -51,7 +51,7 @@ def create_user():
     else:
       return jsonify(API_Response("ERR", [], "Missing required parameters").as_dict())
   except Exception as e:
-    return jsonify(API_Response("ERR", [], str(e)).as_dict())
+    return jsonify(API_Response("ERR", [], "Username or email already exists").as_dict())
 
 @app.route("/api/user", methods=['GET'])
 def get_user_id():
@@ -59,11 +59,11 @@ def get_user_id():
     if all ([arg in request.args for arg in ['username','password']]):
       user = User.query.filter_by(name=request.args['username']).first()
       if not user or not user.check_password(request.args['password']):
-        return jsonify(API_Response("ERR", [], "Authentication failed"))
+        return jsonify(API_Response("ERR", [], "Invalid Authentication").as_dict())
       # user is properly authenticated!
       return jsonify(API_Response("OK", [user.serialize]).as_dict())
     else:
-      raise Exception
+      return jsonify(API_Response("ERR", [], "Missing required parameters").as_dict())
   except Exception as e:
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
 
@@ -99,22 +99,28 @@ def get_blip():
 @app.route("/api/blip", methods=['PUT'])
 def create_blip():
   try:
-    if all ([arg in request.form for arg in
-             ['song_id','longitude',
-                    'latitude','user_id','password']]):
-      usr = User.query.filter_by(id=request.form['user_id']).first()
-      if usr.check_password(request.form['password']):
-        new_blip = Blip(request.form['song_id'],
-                        request.form['user_id'],
-                        request.form['longitude'],
-                        request.form['latitude'])
-        db.session.add(new_blip)
-        db.session.commit()
-        return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
-      else:
-        raise Exception
+    if all ([arg in request.form for arg in ['song_id','longitude', 'latitude','user_id','password']]):
+      usr  = User.query.get(request.form['user_id'])
+      song = Song.query.get(request.form['song_id'])
+
+      if not song:
+        return jsonify(API_Response("ERR", [], "Song ID does not exist").as_dict())
+      if not usr:
+        return jsonify(API_Response("ERR", [], "User ID does not exist").as_dict())
+      if not usr.check_password(request.form['password']):
+        return jsonify(API_Response("ERR", [], "Invalid Authentication").as_dict())
+
+      new_blip = Blip(request.form['song_id'],
+                      request.form['user_id'],
+                      request.form['longitude'],
+                      request.form['latitude'])
+
+      db.session.add(new_blip)
+      db.session.commit()
+      return jsonify(API_Response("OK", [new_blip.serialize]).as_dict())
+
     else:
-      raise Exception
+      return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
   except Exception as e:
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
   return None
@@ -124,8 +130,7 @@ def create_blip():
 @app.route("/api/song",methods=['PUT'])
 def create_song():
   try:
-    if all([arg in request.form for arg in
-            ['artist','title']]):
+    if all([arg in request.form for arg in ['artist','title']]):
       new_song = Song.query.filter_by(artist=request.form['artist'],
                                       title=request.form['title']).first()
       if not new_song:
@@ -134,7 +139,7 @@ def create_song():
         db.session.commit()
       return jsonify(API_Response("OK", [new_song.serialize]).as_dict())
     else:
-      raise Exception
+      return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
   except Exception as e:
     return jsonify(API_Response("ERR", [], request.form).as_dict())
   return None

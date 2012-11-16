@@ -102,17 +102,160 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
 
   def test_new_user_is_duplicate(self):
-  	rv = self.app.put("/api/user",data=dict(
-  	  username="ben",
+    rv = self.app.put("/api/user",data=dict(
+      username="ben",
       password="testpass",
-      email="benweitzman@gmail.com"	
-  	))
-	rv = self.app.put("/api/user",data=dict(
-  	  username="ben",
+      email="benweitzman@gmail.com"
+    ))
+    rv = self.app.put("/api/user",data=dict(
+      username="ben",
       password="testpass",
-      email="benweitzman@gmail.com"	
-  	))
-	assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Username or email already exists"},"objects":[]}
+      email="benweitzman@gmail.com"
+    ))
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Username or email already exists"},"objects":[]}
+
+  def test_user_does_authenticate(self):
+    self.app.put("/api/user",data=dict(
+      username="ben",
+      password="testpass",
+      email="benweitzman@gmail.com"
+    ))
+    rv = self.app.get('/api/user?username=ben&password=testpass')
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},"objects":[{"id":1,"name":"ben","email":"benweitzman@gmail.com"}]}
+
+  def test_user_fails_autentication(self):
+    self.app.put("/api/user",data=dict(
+      username="ben",
+      password="testpass",
+      email="benweitzman@gmail.com"
+    ))
+    rv = self.app.get('/api/user?username=ben&password=testpa')
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
+
+    rv = self.app.get('/api/user?username=ben2&password=testpass')
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
+
+  def test_new_song_creates_song_with_valid_data(self):
+    rv = self.app.put("/api/song",data=dict(
+      artist = "The Kinks",
+      title  = "Big Sky"
+    ))
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""},
+                                         "objects": [{"id":1,"artist":"The Kinks","title":"Big Sky","album":"","provider_key":"Youtube","provider_song_id":"wiyrFSSG5_g"}]}
+
+  def test_new_song_creates_song_with_invalid_data(self):
+    rv = self.app.put("/api/song",data=dict(
+      username  = "The Kinks",
+      password  = "Big Sky"
+    ))
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_valid_data(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    rv = self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "50.0",
+      latitude  = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [{"id"      : 1,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 50.0,
+                                                  "latitude"  : 50.0,
+                                                  "timestamp" : now}]}
+
+  def test_new_blip_creates_blip_with_invalid_data(self):
+    rv = self.app.put("/api/blip",data=dict(
+      latitude  = "50.0",
+      password  = "testpass"
+    ))
+
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_nonexistant_song_id(self):
+
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    # missing parameters
+    rv = self.app.put("/api/blip",data=dict(
+      song_id   = 123,
+      latitude  = "50.0",
+      longitude = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Song ID does not exist"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_nonexistant_user_id(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+
+    # missing parameters
+    rv = self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      latitude  = "50.0",
+      longitude = "50.0",
+      user_id   = 1234,
+      password  = "testpass"
+    ))
+
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_invalid_password(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    # missing parameters
+    rv = self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      latitude  = "50.0",
+      longitude = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass123"
+    ))
+
+
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+
 
 
 if __name__ == '__main__':

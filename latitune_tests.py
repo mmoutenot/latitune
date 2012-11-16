@@ -90,16 +90,16 @@ class latituneTestCase(unittest.TestCase):
   """
 
   def test_new_user_creates_user_with_valid_data(self):
-  	rv = self.app.put("/api/user",data=dict(
-  			username="ben",
-  			password="testpass",
-  			email="benweitzman@gmail.com"
-  		)
-  	)
-  	assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""}, "objects": [{"email": "benweitzman@gmail.com", "id": 1, "name": "ben"}]}
+    rv = self.app.put("/api/user",data=dict(
+      username="ben",
+      password="testpass",
+      email="benweitzman@gmail.com"
+    ))
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""}, "objects": [{"email": "benweitzman@gmail.com", "id": 1, "name": "ben"}]}
+
   def test_new_user_returns_proper_error_with_bad_data(self):
-  	rv = self.app.put("/api/user")
-  	assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
+    rv = self.app.put("/api/user")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
 
 if __name__ == '__main__':
   unittest.main()

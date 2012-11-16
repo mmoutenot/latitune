@@ -49,7 +49,7 @@ def create_user():
       db.session.commit()
       return jsonify(API_Response("OK", [new_user.serialize]).as_dict())
     else:
-      raise Exception
+      return jsonify(API_Response("ERR", [], "Missing required parameters").as_dict())
   except Exception as e:
     return jsonify(API_Response("ERR", [], str(e)).as_dict())
 

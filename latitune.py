@@ -42,6 +42,13 @@ class API_Response:
 # CONTROLLERS
 ##################################################
 
+if os.environ.get('LATITUNE_LOCAL') == "true":
+  @app.route("/diediedie", methods=['GET'])
+  def destroy():
+    db.session.remove()
+    deb.session.drop_all()
+    return "KILLED"
+
 # USER
 
 @app.route("/api/user", methods=['PUT'])

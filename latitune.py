@@ -42,12 +42,13 @@ class API_Response:
 # CONTROLLERS
 ##################################################
 
-if os.environ.get('LATITUNE_LOCAL') == "true":
-  @app.route("/diediedie", methods=['GET'])
-  def destroy():
+@app.route("/diediedie", methods=['GET'])
+def destroy():
+  if os.environ.get('LATITUNE_LOCAL') == "true":
     db.session.remove()
     deb.session.drop_all()
     return "KILLED"
+  return "WHO DO YOU THINK YOU ARE?"
 
 # USER
 

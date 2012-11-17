@@ -44,7 +44,7 @@ class API_Response:
 
 # DEVELOPMENT ONLY
 
-@app.route("/tabularasa", methods=['GET'])
+@app.route("/api/tabularasa", methods=['GET'])
 def destroy():
   if os.environ.get('LATITUNE_LOCAL') == "true":
     db.session.remove()

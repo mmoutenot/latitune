@@ -16,7 +16,8 @@ yt_service = gdata.youtube.service.YouTubeService()
 yt_service.developer_key = 'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46XM_KxWn5KtwdrAZp6WeMF9Jrzk-sXabs0R_F9T9MHZdiOYA'
 
 app       = Flask (__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/latitune_dev'
+if len(argv) == 2 and sys.argv[1] == "dev":
+  app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/latitune_dev'
 app.debug = True
 
 heroku = None

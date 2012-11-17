@@ -256,7 +256,140 @@ class latituneTestCase(unittest.TestCase):
 
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
+  def test_get_blip_by_id_with_valid_data(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
 
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "50.0",
+      latitude  = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+    rv = self.app.get('/api/blip?id=1')
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [{"id"      : 1,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 50.0,
+                                                  "latitude"  : 50.0,
+                                                  "timestamp" : now}]}
+  def test_get_nearby_blips_with_valid_data(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "50.0",
+      latitude  = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+    self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "51.0",
+      latitude  = "51.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+    rv = self.app.get('/api/blip?latitude=50.0&longitude=50.0')
+    print(rv.data)
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    rv_dict['objects'][1]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects": [
+                                                    {"id"      : 1,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 50.0,
+                                                  "latitude"  : 50.0,
+                                                  "timestamp" : now},
+                                                    {"id"      : 2,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 51.0,
+                                                  "latitude"  : 51.0,
+                                                  "timestamp" : now}]}
+
+  def test_get_all_blips_with_valid_data(self):
+    song = self.app.put("/api/song",data=dict(
+                  artist = "The Kinks",
+                  title  = "Big Sky"
+                ))
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+
+    user = self.app.put("/api/user",data=dict(
+                  username="ben",
+                  password="testpass",
+                  email="benweitzman@gmail.com"
+                ))
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+
+    self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "50.0",
+      latitude  = "50.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+    self.app.put("/api/blip",data=dict(
+      song_id   = song_dict['id'],
+      longitude = "51.0",
+      latitude  = "51.0",
+      user_id   = user_dict['id'],
+      password  = "testpass"
+    ))
+
+    rv = self.app.get('/api/blip')
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    rv_dict['objects'][1]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects": [
+                                                    {"id"      : 1,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 50.0,
+                                                  "latitude"  : 50.0,
+                                                  "timestamp" : now},
+                                                    {"id"      : 2,
+                                                    "song"    : song_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "longitude" : 51.0,
+                                                  "latitude"  : 51.0,
+                                                  "timestamp" : now}]}
 
 if __name__ == '__main__':
   unittest.main()

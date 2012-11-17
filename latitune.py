@@ -17,6 +17,7 @@ yt_service.developer_key = 'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46X
 app       = Flask (__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/latitune_dev'
 app.debug = True
+
 heroku = None
 db        = SQLAlchemy (app)
 
@@ -79,7 +80,7 @@ def get_blip():
       db.session.commit()
       query = """
         SELECT id, longitude, latitude,
-          (3959*acos(cos(radians(%(lat)i))*cos(radians(latitude))*cos(radians(longitude)-radians(%(lng)i))+sin(radians(%(lat)i))*sin(radians(latitude))))
+          (3959*ACOS(COS(RADIANS(%(lat)i))*COS(RADIANS(latitude))*COS(RADIANS(longitude)-RADIANS(%(lng)i))+SIN(RADIANS(%(lat)i))*SIN(RADIANS(latitude))))
         AS distance from blip
         order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
       blips = Blip.query.from_statement(query).all()
@@ -248,7 +249,8 @@ class Blip(db.Model):
 # MAIN RUN
 
 if __name__ == "__main__":
-  heroku    = Heroku(app)
+  if argc == 1:
+    heroku    = Heroku(app)
   # Bind to PORT if defined, otherwise default to 5000.
   port = int(os.environ.get('PORT', 5000))
   app.run(host='0.0.0.0', port=port)

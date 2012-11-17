@@ -248,7 +248,7 @@ class Blip(db.Model):
 # MAIN RUN
 
 if __name__ == "__main__":
-  if argc != 2 and argv[1] != "dev":
+  if argc == 1:
     heroku    = Heroku(app)
   # Bind to PORT if defined, otherwise default to 5000.
   port = int(os.environ.get('PORT', 5000))

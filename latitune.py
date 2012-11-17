@@ -18,6 +18,8 @@ yt_service.developer_key = 'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46X
 app       = Flask (__name__)
 if len(sys.argv) == 2 and sys.argv[1] == "dev":
   app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/latitune_dev'
+else:
+  heroku    = Heroku(app)
 app.debug = True
 
 heroku = None
@@ -251,9 +253,6 @@ class Blip(db.Model):
 # MAIN RUN
 
 if __name__ == "__main__":
-  if len(sys.argv) == 1:
-    heroku    = Heroku(app)
-    db        = SQLAlchemy (app)
   # Bind to PORT if defined, otherwise default to 5000.
   port = int(os.environ.get('PORT', 5000))
   app.run(host='0.0.0.0', port=port)

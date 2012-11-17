@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_heroku import Heroku
@@ -249,7 +250,7 @@ class Blip(db.Model):
 # MAIN RUN
 
 if __name__ == "__main__":
-  if argc == 1:
+  if len(sys.argv) == 1:
     heroku    = Heroku(app)
   # Bind to PORT if defined, otherwise default to 5000.
   port = int(os.environ.get('PORT', 5000))

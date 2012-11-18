@@ -150,6 +150,38 @@ def create_song():
     return jsonify(API_Response("ERR", [], request.form).as_dict())
   return None
 
+@app.route("/api/comment",methods=['PUT'])
+def create_comment():
+  if not all([arg in request.form for arg in ['user_id','blip_id','password','comment']]):
+    return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
+  user = User.query.get(request.form['user_id'])
+  blip = Blip.query.get(request.form['blip_id'])
+  if not blip:
+    return jsonify(API_Response("ERR", [], "Blip ID does not exist").as_dict())
+  if not user:
+    return jsonify(API_Response("ERR", [], "User ID does not exist").as_dict())
+  if not user.check_password(request.form['password']):
+        return jsonify(API_Response("ERR", [], "Invalid Authentication").as_dict())
+
+
+  new_comment = Comment(request.form['user_id'],request.form['blip_id'],request.form['comment'])
+  db.session.add(new_comment)
+  db.session.commit()
+  return jsonify(API_Response("OK",[new_comment.serialize]).as_dict())
+
+@app.route("/api/comment",methods=['GET'])
+def get_comment():
+  if 'id' in request.args:
+    comment = Comment.query.filter_by(id=request.args['id']).first()
+    if not comment:
+      return jsonify(API_Response("ERR", [], "Comment ID does not exist").as_dict()) 
+    return jsonify(API_Response("OK",[comment.serialize]).as_dict())
+  if 'blip_id' in request.args:
+    comments = Comment.query.filter_by(blip_id=request.args['blip_id']).order_by(db.desc('comment.timestamp')).all()
+    return jsonify(API_Response("OK",[comment.serialize for comment in comments]).as_dict())
+  return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
+
+
 ##################################################
 # MODEL DEFINITIONS
 ##################################################
@@ -250,6 +282,30 @@ class Blip(db.Model):
       'timestamp' : self.timestamp.isoformat()
     }
 
+class Comment(db.Model):
+  __tablename__ = "comment"
+
+  id = db.Column(db.Integer, primary_key = True)
+  blip_id   = db.Column(db.Integer, db.ForeignKey('blip.id'))
+  user_id   = db.Column(db.Integer, db.ForeignKey('user.id'))
+  comment   = db.Column(db.Text)
+  timestamp = db.Column(db.DateTime, default=datetime.now)
+
+  def __init__(self, user_id,blip_id,comment):
+    self.user_id = user_id
+    self.blip_id = blip_id
+    self.comment = comment
+
+  @property
+  def serialize(self):
+    blip = Blip.query.filter_by(id=self.blip_id).first()
+    return {
+      'id'       : self.id,
+      'blip'     : blip.serialize,
+      'comment'  : self.comment,
+      'user_id'  : self.user_id,
+      'timestamp': self.timestamp.isoformat()
+    }
 # MAIN RUN
 
 if __name__ == "__main__":

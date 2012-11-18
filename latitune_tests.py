@@ -32,6 +32,13 @@ class latituneTestCase(unittest.TestCase):
         user_id   = user_id,
         password  = password,
         ))
+  def createComment(self,user_id,password,blip_id,comment):
+    return self.app.put("/api/comment",data=dict(
+        blip_id  = blip_id,
+        user_id  = user_id,
+        password = password,
+        comment  = comment
+      ))
     
   def setUp(self):
     latitune.db.create_all()
@@ -51,6 +58,7 @@ class latituneTestCase(unittest.TestCase):
   """
   Models
   """
+  """ User """
 
   def test_user_constructor_applies_fields(self):
     user = latitune.User("ben","benweitzman@gmail.com","testpass")
@@ -67,6 +75,8 @@ class latituneTestCase(unittest.TestCase):
     latitune.db.session.commit()
     assert user.serialize == {"id":1,"name":"ben","email":"benweitzman@gmail.com"}
 
+  """ Song """
+
   def test_song_constructor_applies_fields(self):
     song = latitune.Song("The Kinks","Big Sky")
     assert song.artist == "The Kinks"
@@ -80,6 +90,8 @@ class latituneTestCase(unittest.TestCase):
     latitune.db.session.commit()
     serialized = song.serialize
     assert serialized == {"id":1,"artist":"The Kinks","title":"Big Sky","album":"","provider_key":"Youtube","provider_song_id":"wiyrFSSG5_g"}
+
+  """ Blip """
 
   def test_blip_constructor_applies_fields(self):
     user = latitune.User("ben","benweitzman@gmail.com","testpass")
@@ -110,6 +122,42 @@ class latituneTestCase(unittest.TestCase):
     assert serialized == {"id":1, "song":song.serialize, "user_id":user.id,
                          "longitude":50.0, "latitude":50.0,
                          "timestamp":now.isoformat()}
+  
+  """ Comment """
+
+  def test_comment_constructor_applies_fields(self):
+    user = latitune.User("ben","benweitzman@gmail.com","testpass")
+    latitune.db.session.add(user)
+    song = latitune.Song("The Kinks","Big Sky")
+    latitune.db.session.add(song)
+    blip = latitune.Blip(song.id, user.id, 50.0, 50.0)
+    latitune.db.session.add(blip)
+    latitune.db.session.commit()
+    comment = latitune.Comment(user.id,blip.id,"This is a comment")
+    latitune.db.session.add(comment)
+    latitune.db.session.commit()
+
+    assert comment.user_id == user.id
+    assert comment.blip_id == blip.id
+    assert comment.comment == "This is a comment"
+
+  def test_comment_serializes(self):
+    user = latitune.User("ben","benweitzman@gmail.com","testpass")
+    latitune.db.session.add(user)
+    song = latitune.Song("The Kinks","Big Sky")
+    latitune.db.session.add(song)
+    latitune.db.session.commit()
+    blip = latitune.Blip(song.id, user.id, 50.0, 50.0)
+    latitune.db.session.add(blip)
+    latitune.db.session.commit()
+    comment = latitune.Comment(user.id,blip.id,"This is a comment")
+    now = datetime.now()
+    comment.timestamp = now
+    latitune.db.session.add(comment)
+    latitune.db.session.commit()
+
+    serialized = comment.serialize
+    assert serialized == {"id":1,"user_id":user.id,"blip":blip.serialize,"timestamp":now.isoformat(),"comment":"This is a comment"}
 
   """
   Views
@@ -287,6 +335,112 @@ class latituneTestCase(unittest.TestCase):
                                                   "longitude" : 51.0,
                                                   "latitude"  : 51.0,
                                                   "timestamp" : now}]}
+
+  def test_new_comment_creates_comment_with_valid_data(self):
+    song = self.createSong("The Kinks","Big Sky")
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+
+    rv = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [{"id"      : 1,
+                                                    "blip"    : blip_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "comment"   : "This is a comment",
+                                                  "timestamp" : now}]}
+
+  def test_new_comment_create_comment_with_invalid_data(self):
+    rv = self.app.put("/api/comment",data=dict(
+      blip_id   = 1,
+      password  = "testpass"
+    ))
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+
+  def test_new_comment_creates_comment_with_nonexistant_blip_id(self):
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    rv = self.createComment(user_dict['id'],"testpass",1,"This is a comment")
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_nonexistant_user_id(self):
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    song = self.createSong("The Kinks","Big Sky")
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    rv = self.createComment(123,"testpass",blip_dict['id'],"This is a comment")
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+
+  def test_new_blip_creates_blip_with_invalid_password(self):
+    song = self.createSong("The Kinks","Big Sky")
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    rv = self.createComment(user_dict['id'],"testpass123",blip_dict['id'],"This is a comment")
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+
+  def test_get_comment_by_id_with_valid_data(self):
+    song = self.createSong("The Kinks","Big Sky")
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    comment = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
+    comment_dict = ast.literal_eval(comment.data)['objects'][0]
+
+    rv = self.app.get('/api/comment?id=1')
+    now = datetime.now().isoformat()
+    rv_dict = ast.literal_eval(rv.data)
+    rv_dict['objects'][0]['timestamp'] = now
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [{"id"      : 1,
+                                                    "blip"    : blip_dict,
+                                                  "user_id"   : user_dict['id'],
+                                                  "comment"   : "This is a comment",
+                                                  "timestamp" : now}]}
+
+  def test_get_comment_by_blip_id_with_valid_data(self):
+    song = self.createSong("The Kinks","Big Sky")
+    song_dict = ast.literal_eval(song.data)['objects'][0]
+    user = self.createUser("ben","testpass","benweitzman@gmail.com")
+    user_dict = ast.literal_eval(user.data)['objects'][0]
+    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    blip2 = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
+    blip2_dict = ast.literal_eval(blip2.data)['objects'][0]
+    comment1 = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
+    comment1_dict = ast.literal_eval(comment1.data)['objects'][0]
+    comment2 = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment part 2")
+    comment2_dict = ast.literal_eval(comment2.data)['objects'][0]
+    comment3 = self.createComment(user_dict['id'],"testpass",blip2_dict['id'],"This is a comment part 2")
+    comment3_dict = ast.literal_eval(comment3.data)['objects'][0]
+
+    rv = self.app.get('/api/comment?blip_id={0}'.format(blip_dict['id']))
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [comment2_dict,comment1_dict]}
+
+  def test_get_comment_with_invalid_data(self):
+    rv = self.app.get('/api/comment')
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}  
+      
+  def test_get_comment_with_invalid_id(self):
+    rv = self.app.get('/api/comment?id=1')
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Comment ID does not exist"},"objects":[]}  
+
+                                              
 
 if __name__ == '__main__':
   unittest.main()

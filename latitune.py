@@ -42,6 +42,17 @@ class API_Response:
 # CONTROLLERS
 ##################################################
 
+# DEVELOPMENT ONLY
+
+@app.route("/api/tabularasa", methods=['GET'])
+def destroy():
+  if os.environ.get('LATITUNE_LOCAL') == "true":
+    db.session.remove()
+    db.drop_all()
+    db.create_all()
+    return "TABULA RASA, BITCH"
+  return "WHO DO YOU THINK YOU ARE?"
+
 # USER
 
 @app.route("/api/user", methods=['PUT'])

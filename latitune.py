@@ -50,7 +50,7 @@ def destroy():
     db.session.remove()
     db.drop_all()
     db.create_all()
-    return "TABULA RASA, BITCH"
+    return "OK"
   return "WHO DO YOU THINK YOU ARE?"
 
 # USER

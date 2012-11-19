@@ -18,11 +18,21 @@ class latituneTestCase(unittest.TestCase):
         email=email
         ))
 
+  def generateUser(self,username="ben",password="testpass",email="benweitzman@gmail.com"):
+    userResponse = self.createUser(username,password,email)
+    userDict = ast.literal_eval(userResponse.data)['objects'][0]
+    return userDict
+
   def createSong(self,artist,title):
     return self.app.put("/api/song",data=dict(
         artist = artist,
         title  = title,
         ))
+
+  def generateSong(self,artist="The Kinks",title="Big Sky"):
+    songResponse = self.createSong(artist,title)
+    songDict = ast.literal_eval(songResponse.data)['objects'][0]
+    return songDict
   
   def createBlip(self,latitude,longitude,song_id,user_id,password):
     return self.app.put("/api/blip",data=dict(
@@ -32,6 +42,15 @@ class latituneTestCase(unittest.TestCase):
         user_id   = user_id,
         password  = password,
         ))
+
+  def generateBlip(self,latitude="50.0",longitude="50.0",username="ben",password="testpass",
+                   email="benweitzman@gmail.com",artist="The Kinks",title="Big Sky"):
+    userDict = self.generateUser(username=username,password=password,email=email)
+    songDict = self.generateSong(artist=artist,title=title)
+    blipResponse = self.createBlip(latitude,longitude,songDict['id'],userDict['id'],password)
+    blipDict = ast.literal_eval(blipResponse.data)['objects'][0]
+    return userDict, songDict, blipDict
+
   def createComment(self,user_id,password,blip_id,comment):
     return self.app.put("/api/comment",data=dict(
         blip_id  = blip_id,
@@ -40,6 +59,19 @@ class latituneTestCase(unittest.TestCase):
         comment  = comment
       ))
     
+  def generateComment(self,latitude="50.0",longitude="50.0",username="ben",password="testpass",
+                      email="benweitzman@gmail.com",artist="The Kinks",title="Big Sky",
+                      comment="This is a comment"):
+    userDict, songDict, blipDict = self.generateBlip(latitude=latitude,longitude=longitude,username=username,password=password,
+                                                     email=email,artist=artist,title=title)
+    commentResponse = self.createComment(userDict['id'],password,blipDict['id'],comment)
+    commentDict = ast.literal_eval(commentResponse.data)['objects'][0]
+    return userDict, songDict, blipDict, commentDict
+
+  """
+  Test stuff
+  """
+
   def setUp(self):
     latitune.db.create_all()
     self.app = latitune.app.test_client()
@@ -56,7 +88,7 @@ class latituneTestCase(unittest.TestCase):
     assert (latitune.User.query.first().name == "ben")
 
   """
-  Models
+  Model Tests
   """
   """ User """
 
@@ -160,7 +192,7 @@ class latituneTestCase(unittest.TestCase):
     assert serialized == {"id":1,"user_id":user.id,"blip":blip.serialize,"timestamp":now.isoformat(),"comment":"This is a comment"}
 
   """
-  Views
+  View Tests
   """
 
   def test_new_user_creates_user_with_valid_data(self):
@@ -172,17 +204,17 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
 
   def test_new_user_is_duplicate(self):
-    rv = self.createUser("ben","testpass","benweitzman@gmail.com")
+    self.generateUser()
     rv = self.createUser("ben","testpass","benweitzman@gmail.com")
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Username or email already exists"},"objects":[]}
 
   def test_user_does_authenticate(self):
-    self.createUser("ben","testpass","benweitzman@gmail.com")
+    self.generateUser()
     rv = self.app.get('/api/user?username=ben&password=testpass')
     assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},"objects":[{"id":1,"name":"ben","email":"benweitzman@gmail.com"}]}
 
   def test_user_fails_autentication(self):
-    self.createUser("ben","testpass","benweitzman@gmail.com")
+    self.generateUser()
     rv = self.app.get('/api/user?username=ben&password=testpa')
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
 
@@ -202,11 +234,8 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
 
   def test_new_blip_creates_blip_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-
+    user_dict = self.generateUser()
+    song_dict = self.generateSong()
     rv = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
 
     now = datetime.now().isoformat()
@@ -230,8 +259,7 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
 
   def test_new_blip_creates_blip_with_nonexistant_song_id(self):
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    user_dict = self.generateUser()
 
     # missing parameters
     rv = self.createBlip("50.0","50.0",123,user_dict['id'],"testpass")
@@ -239,20 +267,16 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Song ID does not exist"}, "objects": []}
 
   def test_new_blip_creates_blip_with_nonexistant_user_id(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
+    song_dict = self.generateSong()
 
     # missing parameters
     rv = self.createBlip("50.0","50.0",song_dict['id'],1234,"testpass")
 
-
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
 
   def test_new_blip_creates_blip_with_invalid_password(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    user_dict = self.generateUser()
+    song_dict = self.generateSong()
 
     # missing parameters
     rv = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass123")
@@ -260,10 +284,8 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
   def test_get_blip_by_id_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    user_dict = self.generateUser()
+    song_dict = self.generateSong()
 
     self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
 
@@ -280,10 +302,8 @@ class latituneTestCase(unittest.TestCase):
                                                   "latitude"  : 50.0,
                                                   "timestamp" : now}]}
   def test_get_nearby_blips_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    user_dict = self.generateUser()
+    song_dict = self.generateSong()
     self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
     self.createBlip("51.0","51.0",song_dict['id'],user_dict['id'],"testpass")
 
@@ -308,11 +328,8 @@ class latituneTestCase(unittest.TestCase):
                                                   "timestamp" : now}]}
 
   def test_get_all_blips_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-
+    user_dict = self.generateUser()
+    song_dict = self.generateSong()
     self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
     self.createBlip("51.0","51.0",song_dict['id'],user_dict['id'],"testpass")
 
@@ -337,13 +354,7 @@ class latituneTestCase(unittest.TestCase):
                                                   "timestamp" : now}]}
 
   def test_new_comment_creates_comment_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
-    blip_dict = ast.literal_eval(blip.data)['objects'][0]
-
+    user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
@@ -364,41 +375,22 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
 
   def test_new_comment_creates_comment_with_nonexistant_blip_id(self):
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    user_dict = self.generateUser()
     rv = self.createComment(user_dict['id'],"testpass",1,"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
 
   def test_new_blip_creates_blip_with_nonexistant_user_id(self):
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
-    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(123,"testpass",blip_dict['id'],"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
 
   def test_new_blip_creates_blip_with_invalid_password(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
-    blip_dict = ast.literal_eval(blip.data)['objects'][0]
+    user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(user_dict['id'],"testpass123",blip_dict['id'],"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
   def test_get_comment_by_id_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
-    blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
-    blip_dict = ast.literal_eval(blip.data)['objects'][0]
-    comment = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
-    comment_dict = ast.literal_eval(comment.data)['objects'][0]
-
+    user_dict, song_dict, blip_dict,comment_dict = self.generateComment()
     rv = self.app.get('/api/comment?id=1')
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
@@ -412,10 +404,8 @@ class latituneTestCase(unittest.TestCase):
                                                   "timestamp" : now}]}
 
   def test_get_comment_by_blip_id_with_valid_data(self):
-    song = self.createSong("The Kinks","Big Sky")
-    song_dict = ast.literal_eval(song.data)['objects'][0]
-    user = self.createUser("ben","testpass","benweitzman@gmail.com")
-    user_dict = ast.literal_eval(user.data)['objects'][0]
+    song_dict = self.generateSong()
+    user_dict = self.generateUser()
     blip = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")
     blip_dict = ast.literal_eval(blip.data)['objects'][0]
     blip2 = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass")

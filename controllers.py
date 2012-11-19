@@ -18,8 +18,6 @@ class API_Response:
     return {"meta"    : {"status":self.status,"error":self.error},
             "objects" : self.objs}
 
-
-
 # DEVELOPMENT ONLY
 
 @app.route("/api/tabularasa", methods=['GET'])

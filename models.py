@@ -128,3 +128,22 @@ class Comment(db.Model):
       'user_id'  : self.user_id,
       'timestamp': self.timestamp.isoformat()
     }
+
+class Favorite(db.Model):
+  __tablename__ = "favorite"
+
+  id      = db.Column(db.Integer, primary_key = True)
+  user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+  blip_id = db.Column(db.Integer, db.ForeignKey('blip.id'))
+
+  def __init__(self, user_id, blip_id):
+    self.user_id = user_id
+    self.blip_id = blip_id
+
+  @property 
+  def serialize(self):
+    return {
+      'id'     : self.id,
+      'user_id': self.user_id,
+      'blip_id': self.blip_id
+    }

@@ -16,7 +16,7 @@ class latituneTestCase(unittest.TestCase):
         username=username,
         password=password,
         email=email
-        ))
+      ))
 
   def generateUser(self,username="ben",password="testpass",email="benweitzman@gmail.com"):
     userResponse = self.createUser(username,password,email)
@@ -27,7 +27,7 @@ class latituneTestCase(unittest.TestCase):
     return self.app.put("/api/song",data=dict(
         artist = artist,
         title  = title,
-        ))
+      ))
 
   def generateSong(self,artist="The Kinks",title="Big Sky"):
     songResponse = self.createSong(artist,title)
@@ -41,7 +41,7 @@ class latituneTestCase(unittest.TestCase):
         latitude  = latitude,
         user_id   = user_id,
         password  = password,
-        ))
+      ))
 
   def generateBlip(self,latitude="50.0",longitude="50.0",username="ben",password="testpass",
                    email="benweitzman@gmail.com",artist="The Kinks",title="Big Sky"):
@@ -67,6 +67,13 @@ class latituneTestCase(unittest.TestCase):
     commentResponse = self.createComment(userDict['id'],password,blipDict['id'],comment)
     commentDict = ast.literal_eval(commentResponse.data)['objects'][0]
     return userDict, songDict, blipDict, commentDict
+
+  def createFavorite(self,user_id,password,blip_id):
+    return self.app.put("/api/favorite", data=dict(
+      user_id  = user_id,
+      password = password,
+      blip_id  = blip_id
+    ))
 
   """
   Test stuff
@@ -191,9 +198,45 @@ class latituneTestCase(unittest.TestCase):
     serialized = comment.serialize
     assert serialized == {"id":1,"user_id":user.id,"blip":blip.serialize,"timestamp":now.isoformat(),"comment":"This is a comment"}
 
+  """ Favorite """
+
+  def test_favorite_constructor_applies_fields(self):
+    user = latitune.User("ben","benweitzman@gmail.com","testpass")
+    latitune.db.session.add(user)
+    song = latitune.Song("The Kinks","Big Sky")
+    latitune.db.session.add(song)
+    blip = latitune.Blip(song.id, user.id, 50.0, 50.0)
+    latitune.db.session.add(blip)
+    latitune.db.session.commit()
+
+    favorite = latitune.Favorite(user.id,blip.id)
+    latitune.db.session.add(favorite)
+    latitune.db.session.commit()
+
+    assert favorite.user_id == user.id
+    assert favorite.blip_id == blip.id
+
+  def test_favorite_serializes(self):
+    user = latitune.User("ben","benweitzman@gmail.com","testpass")
+    latitune.db.session.add(user)
+    song = latitune.Song("The Kinks","Big Sky")
+    latitune.db.session.add(song)
+    blip = latitune.Blip(song.id, user.id, 50.0, 50.0)
+    latitune.db.session.add(blip)
+    latitune.db.session.commit()
+
+    favorite = latitune.Favorite(user.id,blip.id)
+    latitune.db.session.add(favorite)
+    latitune.db.session.commit()
+
+    serialized = favorite.serialize
+    assert serialized == {"id":1,"user_id":user.id,"blip_id":blip.id}
+
   """
   View Tests
   """
+
+  """ User """
 
   def test_new_user_creates_user_with_valid_data(self):
     rv = self.createUser("ben","testpass","benweitzman@gmail.com")
@@ -221,6 +264,8 @@ class latituneTestCase(unittest.TestCase):
     rv = self.app.get('/api/user?username=ben2&password=testpass')
     assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
 
+  """ Song """
+
   def test_new_song_creates_song_with_valid_data(self):
     rv = self.createSong("The Kinks","Big Sky")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""},
@@ -232,6 +277,8 @@ class latituneTestCase(unittest.TestCase):
       password  = "Big Sky"
     ))
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+
+  """ Blip """
 
   def test_new_blip_creates_blip_with_valid_data(self):
     user_dict = self.generateUser()
@@ -353,6 +400,8 @@ class latituneTestCase(unittest.TestCase):
                                                   "latitude"  : 51.0,
                                                   "timestamp" : now}]}
 
+  """ Comment """
+
   def test_new_comment_creates_comment_with_valid_data(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(user_dict['id'],"testpass",blip_dict['id'],"This is a comment")
@@ -379,12 +428,12 @@ class latituneTestCase(unittest.TestCase):
     rv = self.createComment(user_dict['id'],"testpass",1,"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
 
-  def test_new_blip_creates_blip_with_nonexistant_user_id(self):
+  def test_new_comment_creates_comment_with_nonexistant_user_id(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(123,"testpass",blip_dict['id'],"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
 
-  def test_new_blip_creates_blip_with_invalid_password(self):
+  def test_new_comment_creates_comment_with_invalid_password(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(user_dict['id'],"testpass123",blip_dict['id'],"This is a comment")
     assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
@@ -428,9 +477,115 @@ class latituneTestCase(unittest.TestCase):
       
   def test_get_comment_with_invalid_id(self):
     rv = self.app.get('/api/comment?id=1')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Comment ID does not exist"},"objects":[]}  
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Comment ID does not exist"},"objects":[]}
 
-                                              
+  """ Favorites """
+
+  def test_new_favorite_creates_favorite_with_valid_data(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    rv = self.createFavorite(user_dict['id'],"testpass",blip_dict['id'])
+    rv_dict = ast.literal_eval(rv.data)
+    assert rv_dict == {"meta": {"status": "OK", "error":
+                                                  ""}, "objects":
+                                                  [{"id"      : 1,
+                                                    "blip_id"    : blip_dict['id'],
+                                                  "user_id"   : user_dict['id']
+                                                  }]}
+
+  def test_new_favorite_create_favorite_with_invalid_data(self):
+    rv = self.app.put("/api/favorite",data=dict(
+        username = "tbow"
+      ))
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}  
+
+  def test_new_favorite_creates_favorite_with_nonexistant_blip_id(self):
+    user_dict = self.generateUser()
+    rv = self.createFavorite(1,"testpass",1)
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
+
+  def test_new_favorite_creates_favorite_with_nonexistant_user_id(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    rv = self.createFavorite(2,"testpass",1)
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+
+  def test_new_favorite_creates_favorite_with_invalid_password(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    rv = self.createFavorite(1,"testpass123",1)
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+
+  def test_get_favorites_for_blip_with_no_favorties(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    rv = self.app.get("/api/favorite?blip_id=1")
+    rv_dict = ast.literal_eval(rv.data)
+    assert rv_dict == {"meta": {"status": "OK", "error":""}, 
+                       "objects":[]}
+
+  def test_get_favorites_for_user_with_no_favorites(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    rv = self.app.get("/api/favorite?user_id=1")
+    rv_dict = ast.literal_eval(rv.data)
+    assert rv_dict == {"meta": {"status": "OK", "error":""}, 
+                       "objects":[]}
+
+  def test_get_favorites_for_blips(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    blip_dict2 = self.createBlip(50,50,1,1,"testpass")
+    user_dict2 = self.generateUser(username="ben2",email="ben2@gmail.com")
+    user_dict3 = self.generateUser(username="ben3",email="ben3@gmail.com")
+    self.createFavorite(1,"testpass",1)
+    self.createFavorite(2,"testpass",1)
+    self.createFavorite(3,"testpass",2)
+    rv = self.app.get("/api/favorite?blip_id=1")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK", "error":""},
+                                         "objects":[user_dict2,user_dict]}
+
+  def test_get_favorites_for_user(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    blip_dict2 = ast.literal_eval(self.createBlip(50,50,1,1,"testpass").data)['objects'][0]
+    user_dict2 = self.generateUser(username="ben2",email="ben2@gmail.com")
+    user_dict3 = self.generateUser(username="ben3",email="ben3@gmail.com")
+    self.createFavorite(1,"testpass",1)
+    self.createFavorite(2,"testpass",1)
+    self.createFavorite(3,"testpass",2)
+    self.createFavorite(1,"testpass",2)
+    rv = self.app.get("/api/favorite?user_id=1")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+                                         "objects":[blip_dict,blip_dict2]}
+
+  def test_refavorite_does_nothing(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    self.createFavorite(1,"testpass",1)
+    self.createFavorite(1,"testpass",1)
+    rv = self.app.get("/api/favorite?user_id=1")
+    rv_dict = ast.literal_eval(rv.data)
+    assert rv_dict == {"meta": {"status": "OK", "error":""}, 
+                       "objects":[blip_dict]}
+
+  def test_delete_favorite_with_valid_data(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    self.createFavorite(1,"testpass",1)
+    rv = self.app.delete("/api/favorite?user_id=1&blip_id=1&password=testpass")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+                                         "objects":[]}
+    rv = self.app.get("/api/favorite?user_id=1")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+                                         "objects":[]}
+
+  def test_delete_favorite_with_invalid_data(self):
+    rv = self.app.delete("/api/favorite")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
+
+  def test_delete_favorite_with_nonexistent_favorite(self):
+    user_dict = self.generateUser()
+    rv = self.app.delete("/api/favorite?user_id=1&blip_id=1&password=testpass")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Favorite does not exist"},"objects":[]}
+
+  def test_delete_favorite_with_invalid_authentication(self):
+    user_dict, song_dict, blip_dict = self.generateBlip()
+    self.createFavorite(1,"testpass",1)
+    rv = self.app.delete("/api/favorite?user_id=1&blip_id=1&password=testpass123")
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+
 
 if __name__ == '__main__':
   unittest.main()

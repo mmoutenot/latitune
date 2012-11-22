@@ -15,6 +15,7 @@ yt_service.developer_key = 'AI39si4fdpqYBz4_a6E7choIqT5hIlYhbI4Ucp5eiXGDt5jzE46X
 
 app       = Flask (__name__)
 if os.environ.get('LATITUNE_LOCAL') == "true":
+  print 'running in developer mode for latitune'
   app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/latitune_dev'
 else:
   heroku    = Heroku(app)

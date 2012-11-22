@@ -83,7 +83,6 @@ class latituneTestCase(unittest.TestCase):
     latitune.db.create_all()
     self.app = latitune.app.test_client()
 
-
   def tearDown(self):
     latitune.db.session.remove()
     latitune.db.drop_all()
@@ -244,7 +243,7 @@ class latituneTestCase(unittest.TestCase):
 
   def test_new_user_returns_proper_error_with_bad_data(self):
     rv = self.app.put("/api/user")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing required parameters"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
 
   def test_new_user_is_duplicate(self):
     self.generateUser()
@@ -319,7 +318,7 @@ class latituneTestCase(unittest.TestCase):
     # missing parameters
     rv = self.createBlip("50.0","50.0",song_dict['id'],1234,"testpass")
 
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_blip_creates_blip_with_invalid_password(self):
     user_dict = self.generateUser()
@@ -431,7 +430,7 @@ class latituneTestCase(unittest.TestCase):
   def test_new_comment_creates_comment_with_nonexistant_user_id(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(123,"testpass",blip_dict['id'],"This is a comment")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_comment_creates_comment_with_invalid_password(self):
     user_dict, song_dict, blip_dict = self.generateBlip()

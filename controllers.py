@@ -178,17 +178,13 @@ def get_comment():
   return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
 
 @app.route("/api/blip/favorite",methods=['PUT'])
+@check_arguments(['user_id','blip_id','password'])
+@require_authentication
 def create_favorite():
-  if not all([arg in request.form for arg in ['user_id','blip_id','password']]):
-    return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
   user = User.query.get(request.form['user_id'])
   blip = Blip.query.get(request.form['blip_id'])
   if not blip:
     return jsonify(API_Response("ERR", [], "Blip ID does not exist").as_dict())
-  if not user:
-    return jsonify(API_Response("ERR", [], "User ID does not exist").as_dict())
-  if not user.check_password(request.form['password']):
-        return jsonify(API_Response("ERR", [], "Invalid Authentication").as_dict())
   existing = Favorite.query.filter_by(user_id=request.form['user_id'],blip_id=request.form['blip_id']).first()
   if not existing:
     new_favorite = Favorite(request.form['user_id'],request.form['blip_id'])
@@ -208,13 +204,11 @@ def get_favorites():
   return jsonify(API_Response("OK",[] if objects == [] else [object.serialize for object in objects]).as_dict())
 
 @app.route("/api/blip/favorite",methods=["DELETE"])
+@check_arguments(['user_id','blip_id','password'])
+@require_authentication
 def delete_favorite():
-  if not all([arg in request.args for arg in ['user_id','blip_id','password']]):
-    return jsonify(API_Response("ERR", [], "Missing Required Parameters").as_dict())
   favorite = Favorite.query.filter_by(blip_id=request.args['blip_id'],user_id=request.args['user_id'])
   user = User.query.get(request.args['user_id'])
-  if not user.check_password(request.args['password']):
-    return jsonify(API_Response("ERR", [], "Invalid Authentication").as_dict())
   if favorite.first() is None:
     return jsonify(API_Response("ERR", [], "Favorite does not exist").as_dict())
   favorite.delete()

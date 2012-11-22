@@ -505,7 +505,7 @@ class latituneTestCase(unittest.TestCase):
   def test_new_favorite_creates_favorite_with_nonexistant_user_id(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createFavorite(2,"testpass",1)
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "User ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_favorite_creates_favorite_with_invalid_password(self):
     user_dict, song_dict, blip_dict = self.generateBlip()

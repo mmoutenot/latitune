@@ -14,11 +14,11 @@ class API_Response:
    self.error  = error
    self.objs   = objs
 
-  def as_json(self):
+  def as_dict(self):
     return {"meta"    : {"status":self.status,"error":self.error},
             "objects" : self.objs}
   def as_json(self):
-    return jsonify(self.as_json())
+    return jsonify(self.as_dict())
 
 # Decorator declarations
 

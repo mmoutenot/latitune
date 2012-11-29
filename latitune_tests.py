@@ -239,35 +239,40 @@ class latituneTestCase(unittest.TestCase):
 
   def test_new_user_creates_user_with_valid_data(self):
     rv = self.createUser("ben","testpass","benweitzman@gmail.com")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""}, "objects": [{"email": "benweitzman@gmail.com", "id": 1, "name": "ben"}]}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 20}, "objects": [{"email": "benweitzman@gmail.com", "id": 1, "name": "ben"}]}
 
   def test_new_user_returns_proper_error_with_bad_data(self):
     rv = self.app.put("/api/user")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":10,"error":"Missing Required Parameters"},"objects":[]}
 
-  def test_new_user_is_duplicate(self):
+  def test_new_user_email_is_duplicate(self):
     self.generateUser()
-    rv = self.createUser("ben","testpass","benweitzman@gmail.com")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Username or email already exists"},"objects":[]}
+    rv = self.createUser("ben2","testpass","benweitzman@gmail.com")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":30,"error":"Email already exists"},"objects":[]}
+
+  def test_new_user_username_is_duplicate(self):
+    self.generateUser()
+    rv = self.createUser("ben","testpass","benweitzman2@gmail.com")
+    assert ast.literal_eval(rv.data) == {"meta":{"status":31,"error":"Username already exists"},"objects":[]}
 
   def test_user_does_authenticate(self):
     self.generateUser()
     rv = self.app.get('/api/user?username=ben&password=testpass')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},"objects":[{"id":1,"name":"ben","email":"benweitzman@gmail.com"}]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":20},"objects":[{"id":1,"name":"ben","email":"benweitzman@gmail.com"}]}
 
   def test_user_fails_autentication(self):
     self.generateUser()
     rv = self.app.get('/api/user?username=ben&password=testpa')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":32,"error":"Invalid Authentication"},"objects":[]}
 
     rv = self.app.get('/api/user?username=ben2&password=testpass')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Invalid Authentication"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":32,"error":"Invalid Authentication"},"objects":[]}
 
   """ Song """
 
   def test_new_song_creates_song_with_valid_data(self):
     rv = self.createSong("The Kinks","Big Sky")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error": ""},
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 20},
                                          "objects": [{"id":1,"artist":"The Kinks","title":"Big Sky","album":"","provider_key":"Youtube","provider_song_id":"wiyrFSSG5_g"}]}
 
   def test_new_song_creates_song_with_invalid_data(self):
@@ -275,7 +280,7 @@ class latituneTestCase(unittest.TestCase):
       username  = "The Kinks",
       password  = "Big Sky"
     ))
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 10, "error": "Missing Required Parameters"}, "objects": []}
 
   """ Blip """
 
@@ -287,14 +292,14 @@ class latituneTestCase(unittest.TestCase):
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [{"id"      : 1,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 50.0,
-                                                  "latitude"  : 50.0,
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta"   : {"status"     : 20}, 
+                       "objects":
+                                  [{"id"        : 1,
+                                    "song"      : song_dict,
+                                    "user_id"   : user_dict['id'],
+                                    "longitude" : 50.0,
+                                    "latitude"  : 50.0,
+                                    "timestamp" : now}]}
 
   def test_new_blip_creates_blip_with_invalid_data(self):
     rv = self.app.put("/api/blip",data=dict(
@@ -302,7 +307,7 @@ class latituneTestCase(unittest.TestCase):
       password  = "testpass"
     ))
 
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 10, "error": "Missing Required Parameters"}, "objects": []}
 
   def test_new_blip_creates_blip_with_nonexistant_song_id(self):
     user_dict = self.generateUser()
@@ -310,7 +315,7 @@ class latituneTestCase(unittest.TestCase):
     # missing parameters
     rv = self.createBlip("50.0","50.0",123,user_dict['id'],"testpass")
 
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Song ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 40, "error": "Song ID does not exist"}, "objects": []}
 
   def test_new_blip_creates_blip_with_nonexistant_user_id(self):
     song_dict = self.generateSong()
@@ -318,7 +323,7 @@ class latituneTestCase(unittest.TestCase):
     # missing parameters
     rv = self.createBlip("50.0","50.0",song_dict['id'],1234,"testpass")
 
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status":32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_blip_creates_blip_with_invalid_password(self):
     user_dict = self.generateUser()
@@ -327,7 +332,7 @@ class latituneTestCase(unittest.TestCase):
     # missing parameters
     rv = self.createBlip("50.0","50.0",song_dict['id'],user_dict['id'],"testpass123")
 
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status":32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_get_blip_by_id_with_valid_data(self):
     user_dict = self.generateUser()
@@ -339,14 +344,15 @@ class latituneTestCase(unittest.TestCase):
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [{"id"      : 1,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 50.0,
-                                                  "latitude"  : 50.0,
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta"   : {"status"    : 20}, 
+                       "objects":
+                                 [{"id"        : 1,
+                                   "song"      : song_dict,
+                                   "user_id"   : user_dict['id'],
+                                   "longitude" : 50.0,
+                                   "latitude"  : 50.0,
+                                   "timestamp" : now}]}
+
   def test_get_nearby_blips_with_valid_data(self):
     user_dict = self.generateUser()
     song_dict = self.generateSong()
@@ -358,20 +364,20 @@ class latituneTestCase(unittest.TestCase):
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
     rv_dict['objects'][1]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects": [
-                                                    {"id"      : 1,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 50.0,
-                                                  "latitude"  : 50.0,
-                                                  "timestamp" : now},
-                                                    {"id"      : 2,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 51.0,
-                                                  "latitude"  : 51.0,
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta":    {"status":20}, 
+                       "objects": [
+                                    {"id"        : 1,
+                                     "song"      : song_dict,
+                                     "user_id"   : user_dict['id'],
+                                     "longitude" : 50.0,
+                                     "latitude"  : 50.0,
+                                     "timestamp" : now},
+                                    {"id"        : 2,
+                                     "song"      : song_dict,
+                                     "user_id"   : user_dict['id'],
+                                     "longitude" : 51.0,
+                                     "latitude"  : 51.0,
+                                     "timestamp" : now}]}
 
   def test_get_all_blips_with_valid_data(self):
     user_dict = self.generateUser()
@@ -384,20 +390,20 @@ class latituneTestCase(unittest.TestCase):
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
     rv_dict['objects'][1]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects": [
-                                                    {"id"      : 1,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 50.0,
-                                                  "latitude"  : 50.0,
-                                                  "timestamp" : now},
-                                                    {"id"      : 2,
-                                                    "song"    : song_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "longitude" : 51.0,
-                                                  "latitude"  : 51.0,
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta":    {"status":20}, 
+                       "objects": [
+                                    {"id"        : 1,
+                                     "song"      : song_dict,
+                                     "user_id"   : user_dict['id'],
+                                     "longitude" : 50.0,
+                                     "latitude"  : 50.0,
+                                     "timestamp" : now},
+                                    {"id"        : 2,
+                                     "song"      : song_dict,
+                                     "user_id"   : user_dict['id'],
+                                     "longitude" : 51.0,
+                                     "latitude"  : 51.0,
+                                     "timestamp" : now}]}
 
   """ Comment """
 
@@ -407,35 +413,35 @@ class latituneTestCase(unittest.TestCase):
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [{"id"      : 1,
-                                                    "blip"    : blip_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "comment"   : "This is a comment",
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta": {"status"    : 20}, 
+                       "objects":
+                              [{"id"        : 1,
+                                "blip"      : blip_dict,
+                                "user_id"   : user_dict['id'],
+                                "comment"   : "This is a comment",
+                                "timestamp" : now}]}
 
   def test_new_comment_create_comment_with_invalid_data(self):
     rv = self.app.put("/api/blip/comment",data=dict(
       blip_id   = 1,
       password  = "testpass"
     ))
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Missing Required Parameters"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 10, "error": "Missing Required Parameters"}, "objects": []}
 
   def test_new_comment_creates_comment_with_nonexistant_blip_id(self):
     user_dict = self.generateUser()
     rv = self.createComment(user_dict['id'],"testpass",1,"This is a comment")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 50, "error": "Blip ID does not exist"}, "objects": []}
 
   def test_new_comment_creates_comment_with_nonexistant_user_id(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(123,"testpass",blip_dict['id'],"This is a comment")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_comment_creates_comment_with_invalid_password(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createComment(user_dict['id'],"testpass123",blip_dict['id'],"This is a comment")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_get_comment_by_id_with_valid_data(self):
     user_dict, song_dict, blip_dict,comment_dict = self.generateComment()
@@ -443,13 +449,13 @@ class latituneTestCase(unittest.TestCase):
     now = datetime.now().isoformat()
     rv_dict = ast.literal_eval(rv.data)
     rv_dict['objects'][0]['timestamp'] = now
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [{"id"      : 1,
-                                                    "blip"    : blip_dict,
-                                                  "user_id"   : user_dict['id'],
-                                                  "comment"   : "This is a comment",
-                                                  "timestamp" : now}]}
+    assert rv_dict == {"meta": {"status"    : 20}, 
+                       "objects":
+                              [{"id"        : 1,
+                                "blip"      : blip_dict,
+                                "user_id"   : user_dict['id'],
+                                "comment"   : "This is a comment",
+                                "timestamp" : now}]}
 
   def test_get_comment_by_blip_id_with_valid_data(self):
     song_dict = self.generateSong()
@@ -466,17 +472,16 @@ class latituneTestCase(unittest.TestCase):
     comment3_dict = ast.literal_eval(comment3.data)['objects'][0]
 
     rv = self.app.get('/api/blip/comment?blip_id={0}'.format(blip_dict['id']))
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [comment2_dict,comment1_dict]}
+    assert ast.literal_eval(rv.data) == {"meta"   : {"status":20}, 
+                                         "objects": [comment2_dict,comment1_dict]}
 
   def test_get_comment_with_invalid_data(self):
     rv = self.app.get('/api/blip/comment')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":10,"error":"Missing Required Parameters"},"objects":[]}
 
   def test_get_comment_with_invalid_id(self):
     rv = self.app.get('/api/blip/comment?id=1')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Comment ID does not exist"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":60,"error":"Comment ID does not exist"},"objects":[]}
 
   """ Favorites """
 
@@ -484,46 +489,46 @@ class latituneTestCase(unittest.TestCase):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createFavorite(user_dict['id'],"testpass",blip_dict['id'])
     rv_dict = ast.literal_eval(rv.data)
-    assert rv_dict == {"meta": {"status": "OK", "error":
-                                                  ""}, "objects":
-                                                  [{"id"      : 1,
-                                                    "blip_id"    : blip_dict['id'],
-                                                  "user_id"   : user_dict['id']
-                                                  }]}
+    assert rv_dict == {"meta": {"status"              : 20}, 
+                                "objects":
+                                          [{"id"      : 1,
+                                            "blip_id" : blip_dict['id'],
+                                            "user_id" : user_dict['id']
+                                          }]}
 
   def test_new_favorite_create_favorite_with_invalid_data(self):
     rv = self.app.put("/api/blip/favorite",data=dict(
         username = "tbow"
       ))
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":10,"error":"Missing Required Parameters"},"objects":[]}
 
   def test_new_favorite_creates_favorite_with_nonexistant_blip_id(self):
     user_dict = self.generateUser()
     rv = self.createFavorite(1,"testpass",1)
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Blip ID does not exist"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 50, "error": "Blip ID does not exist"}, "objects": []}
 
   def test_new_favorite_creates_favorite_with_nonexistant_user_id(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createFavorite(2,"testpass",1)
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_new_favorite_creates_favorite_with_invalid_password(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.createFavorite(1,"testpass123",1)
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 32, "error": "Invalid Authentication"}, "objects": []}
 
   def test_get_favorites_for_blip_with_no_favorties(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.app.get("/api/blip/favorite?blip_id=1")
     rv_dict = ast.literal_eval(rv.data)
-    assert rv_dict == {"meta": {"status": "OK", "error":""},
+    assert rv_dict == {"meta": {"status": 20},
                        "objects":[]}
 
   def test_get_favorites_for_user_with_no_favorites(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     rv = self.app.get("/api/blip/favorite?user_id=1")
     rv_dict = ast.literal_eval(rv.data)
-    assert rv_dict == {"meta": {"status": "OK", "error":""},
+    assert rv_dict == {"meta": {"status": 20},
                        "objects":[]}
 
   def test_get_favorites_for_blips(self):
@@ -535,7 +540,7 @@ class latituneTestCase(unittest.TestCase):
     self.createFavorite(2,"testpass",1)
     self.createFavorite(3,"testpass",2)
     rv = self.app.get("/api/blip/favorite?blip_id=1")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK", "error":""},
+    assert ast.literal_eval(rv.data) == {"meta":{"status":20},
                                          "objects":[user_dict2,user_dict]}
 
   def test_get_favorites_for_user(self):
@@ -548,7 +553,7 @@ class latituneTestCase(unittest.TestCase):
     self.createFavorite(3,"testpass",2)
     self.createFavorite(1,"testpass",2)
     rv = self.app.get("/api/blip/favorite?user_id=1")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+    assert ast.literal_eval(rv.data) == {"meta":{"status":20},
                                          "objects":[blip_dict,blip_dict2]}
 
   def test_refavorite_does_nothing(self):
@@ -557,33 +562,33 @@ class latituneTestCase(unittest.TestCase):
     self.createFavorite(1,"testpass",1)
     rv = self.app.get("/api/blip/favorite?user_id=1")
     rv_dict = ast.literal_eval(rv.data)
-    assert rv_dict == {"meta": {"status": "OK", "error":""},
+    assert rv_dict == {"meta": {"status":20},
                        "objects":[blip_dict]}
 
   def test_delete_favorite_with_valid_data(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     self.createFavorite(1,"testpass",1)
     rv = self.app.delete("/api/blip/favorite?user_id=1&blip_id=1&password=testpass")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+    assert ast.literal_eval(rv.data) == {"meta":{"status":20},
                                          "objects":[]}
     rv = self.app.get("/api/blip/favorite?user_id=1")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"OK","error":""},
+    assert ast.literal_eval(rv.data) == {"meta":{"status":20},
                                          "objects":[]}
 
   def test_delete_favorite_with_invalid_data(self):
     rv = self.app.delete("/api/blip/favorite")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Missing Required Parameters"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":10,"error":"Missing Required Parameters"},"objects":[]}
 
   def test_delete_favorite_with_nonexistent_favorite(self):
     user_dict = self.generateUser()
     rv = self.app.delete("/api/blip/favorite?user_id=1&blip_id=1&password=testpass")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":"ERR","error":"Favorite does not exist"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":70,"error":"Favorite does not exist"},"objects":[]}
 
   def test_delete_favorite_with_invalid_authentication(self):
     user_dict, song_dict, blip_dict = self.generateBlip()
     self.createFavorite(1,"testpass",1)
     rv = self.app.delete("/api/blip/favorite?user_id=1&blip_id=1&password=testpass123")
-    assert ast.literal_eval(rv.data) == {"meta": {"status": "ERR", "error": "Invalid Authentication"}, "objects": []}
+    assert ast.literal_eval(rv.data) == {"meta": {"status": 32, "error": "Invalid Authentication"}, "objects": []}
 
 
 if __name__ == '__main__':

@@ -582,7 +582,7 @@ class latituneTestCase(unittest.TestCase):
   def test_delete_favorite_with_nonexistent_favorite(self):
     user_dict = self.generateUser()
     rv = self.app.delete("/api/blip/favorite?user_id=1&blip_id=1&password=testpass")
-    assert ast.literal_eval(rv.data) == {"meta":{"status":70,"error":"Favorite does not exist"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":70,"error":"Favorite ID does not exist"},"objects":[]}
 
   def test_delete_favorite_with_invalid_authentication(self):
     user_dict, song_dict, blip_dict = self.generateBlip()

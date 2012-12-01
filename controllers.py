@@ -6,29 +6,39 @@ from sqlalchemy.exc import IntegrityError
 from settings import *
 from models import *
 
-STATUS_CODES = {
-  10:"Missing Required Parameters",
-  20:"Success",
-  30:"Email already exists",
-  31:"Username already exists",
-  32:"Invalid Authentication",
-  40:"Song ID does not exist",
-  50:"Blip ID does not exist",
-  60:"Comment ID does not exist",
-  70:"Favorite ID does not exist"
+MISSING_PARAMETERS      = 10
+SUCCESS                 = 20
+EMAIL_EXISTS            = 30
+USERNAME_EXISTS         = 31
+INVALID_AUTH            = 32
+SONG_DOES_NOT_EXIST     = 40
+BLIP_DOES_NOT_EXIST     = 50
+COMMENT_DOES_NOT_EXIST  = 60
+FAVORITE_DOES_NOT_EXIST = 70
+
+STATUS_CODE_MESSAGES = {
+  MISSING_PARAMETERS      : "Missing Required Parameters",
+  SUCCESS                 : "Success",
+  EMAIL_EXISTS            : "Email already exists",
+  USERNAME_EXISTS         : "Username already exists",
+  INVALID_AUTH            : "Invalid Authentication",
+  SONG_DOES_NOT_EXIST     : "Song ID does not exist",
+  BLIP_DOES_NOT_EXIST     : "Blip ID does not exist",
+  COMMENT_DOES_NOT_EXIST  : "Comment ID does not exist",
+  FAVORITE_DOES_NOT_EXIST : "Favorite ID does not exist"
 }
 
 ##
 # Helper to build json responses for API endpoints
 ##
 class API_Response:
-  def __init__(self,status=20, objs=[], error=""):
+  def __init__(self,status=SUCCESS, objs=[], error=""):
    self.status = status
-   self.error  = STATUS_CODES[status]
+   self.error  = STATUS_CODE_MESSAGES[status]
    self.objs   = objs
 
   def as_dict(self):
-    if self.status != 20:
+    if self.status != SUCCESS:
       return {"meta"    : {"status":self.status,"error":self.error},
               "objects" : self.objs}
     else:
@@ -48,7 +58,7 @@ def check_arguments(names):
       if all ([arg in request.values for arg in names]):
         return fn()
       else:
-        return API_Response(10).as_json()
+        return API_Response(MISSING_PARAMETERS).as_json()
     return wrapped_fn
   return wrap
 
@@ -58,14 +68,14 @@ def require_authentication(fn):
     user_fields = ['user_id', 'username']
     u_field = [u_f for u_f in user_fields if u_f in request.values][0]
     if u_field and not all ([arg in request.values for arg in [u_field, 'password']]):
-      return API_Response(10).as_json()
+      return API_Response(MISSING_PARAMETERS).as_json()
     else:
       if u_field == 'user_id':
         user = User.query.filter_by(id=request.values[u_field]).first()
       elif u_field == 'username':
         user = User.query.filter_by(name=request.values[u_field]).first()
       if not user or not user.check_password(request.values['password']):
-        return API_Response(32).as_json()
+        return API_Response(INVALID_AUTH).as_json()
       return fn()
   return wrap
 
@@ -91,20 +101,20 @@ def create_user():
                     request.form['password'])
     db.session.add(new_user)
     db.session.commit()
-    return API_Response(20, [new_user.serialize]).as_json()
+    return API_Response(SUCCESS, [new_user.serialize]).as_json()
   except IntegrityError as e:
     db.session.rollback()
     if User.query.filter_by(email=request.form['email']).first() is not None:
-      return API_Response(30).as_json()
+      return API_Response(EMAIL_EXISTS).as_json()
     if User.query.filter_by(name=request.form['username']).first() is not None:
-      return API_Response(31).as_json()
+      return API_Response(USERNAME_EXISTS).as_json()
 
 @app.route("/api/user", methods=['GET'])
 @require_authentication
 def get_user_id():
   try:
     user = User.query.filter_by(name=request.args['username']).first()
-    return API_Response(20, [user.serialize]).as_json()
+    return API_Response(SUCCESS, [user.serialize]).as_json()
   except Exception as e:
     return API_Response("ERR", [], str(e)).as_json()
 
@@ -123,17 +133,17 @@ def get_blip():
         AS distance from blip
         order by distance asc limit 25""" % {'lat': float(lat), 'lng': float(lng)}
       blips = Blip.query.from_statement(query).all()
-      return API_Response(20,[blip.serialize for blip in blips]).as_json()
+      return API_Response(SUCCESS,[blip.serialize for blip in blips]).as_json()
     elif 'id' in request.args:
       blip_id = request.args['id']
       blip = Blip.query.filter_by(id=blip_id).first()
       if blip:
-        return API_Response(20, [blip.serialize]).as_json()
+        return API_Response(SUCCESS, [blip.serialize]).as_json()
       else:
         return API_Response("ERR", []).as_json()
     else:
       blips = Blip.query.all()
-      return API_Response(20,[blip.serialize for blip in blips]).as_json()
+      return API_Response(SUCCESS,[blip.serialize for blip in blips]).as_json()
   except Exception as e:
     return API_Response("ERR", [], str(e)).as_json()
 
@@ -145,7 +155,7 @@ def create_blip():
     usr  = User.query.get(request.form['user_id'])
     song = Song.query.get(request.form['song_id'])
     if not song:
-      return API_Response(40).as_json()
+      return API_Response(SONG_DOES_NOT_EXIST).as_json()
     new_blip = Blip(request.form['song_id'],
                     request.form['user_id'],
                     request.form['longitude'],
@@ -153,7 +163,7 @@ def create_blip():
 
     db.session.add(new_blip)
     db.session.commit()
-    return API_Response(20, [new_blip.serialize]).as_json()
+    return API_Response(SUCCESS, [new_blip.serialize]).as_json()
   except Exception as e:
     return API_Response("ERR", [], str(e)).as_json()
   return None
@@ -170,7 +180,7 @@ def create_song():
       new_song = Song(request.form['artist'], request.form['title'])
       db.session.add(new_song)
       db.session.commit()
-    return API_Response(20, [new_song.serialize]).as_json()
+    return API_Response(SUCCESS, [new_song.serialize]).as_json()
   except Exception as e:
     return API_Response("ERR", [], request.form).as_json()
   return None
@@ -182,23 +192,23 @@ def create_comment():
   user = User.query.get(request.form['user_id'])
   blip = Blip.query.get(request.form['blip_id'])
   if not blip:
-    return API_Response(50).as_json()
+    return API_Response(BLIP_DOES_NOT_EXIST).as_json()
   new_comment = Comment(request.form['user_id'],request.form['blip_id'],request.form['comment'])
   db.session.add(new_comment)
   db.session.commit()
-  return API_Response(20,[new_comment.serialize]).as_json()
+  return API_Response(SUCCESS,[new_comment.serialize]).as_json()
 
 @app.route("/api/blip/comment",methods=['GET'])
 def get_comment():
   if 'id' in request.args:
     comment = Comment.query.filter_by(id=request.args['id']).first()
     if not comment:
-      return API_Response(60).as_json()
-    return API_Response(20,[comment.serialize]).as_json()
+      return API_Response(COMMENT_DOES_NOT_EXIST).as_json()
+    return API_Response(SUCCESS,[comment.serialize]).as_json()
   if 'blip_id' in request.args:
     comments = Comment.query.filter_by(blip_id=request.args['blip_id']).order_by(db.desc('comment.timestamp')).all()
-    return API_Response(20,[comment.serialize for comment in comments]).as_json()
-  return API_Response(10).as_json()
+    return API_Response(SUCCESS,[comment.serialize for comment in comments]).as_json()
+  return API_Response(MISSING_PARAMETERS).as_json()
 
 @app.route("/api/blip/favorite",methods=['PUT'])
 @check_arguments(['user_id','blip_id','password'])
@@ -207,14 +217,14 @@ def create_favorite():
   user = User.query.get(request.form['user_id'])
   blip = Blip.query.get(request.form['blip_id'])
   if not blip:
-    return API_Response(50).as_json()
+    return API_Response(BLIP_DOES_NOT_EXIST).as_json()
   existing = Favorite.query.filter_by(user_id=request.form['user_id'],blip_id=request.form['blip_id']).first()
   if not existing:
     new_favorite = Favorite(request.form['user_id'],request.form['blip_id'])
     db.session.add(new_favorite)
     db.session.commit()
     existing = new_favorite
-  return API_Response(20,[existing.serialize]).as_json()
+  return API_Response(SUCCESS,[existing.serialize]).as_json()
 
 @app.route("/api/blip/favorite",methods=["GET"])
 def get_favorites():
@@ -224,7 +234,7 @@ def get_favorites():
   if "user_id" in request.args:
     favorites = Favorite.query.filter_by(user_id=request.args['user_id']).order_by(db.asc("blip_id")).all()
     objects = map(lambda x:Blip.query.get(x.blip_id),favorites)
-  return API_Response(20,[] if objects == [] else [object.serialize for object in objects]).as_json()
+  return API_Response(SUCCESS,[] if objects == [] else [object.serialize for object in objects]).as_json()
 
 @app.route("/api/blip/favorite",methods=["DELETE"])
 @check_arguments(['user_id','blip_id','password'])
@@ -233,8 +243,8 @@ def delete_favorite():
   favorite = Favorite.query.filter_by(blip_id=request.args['blip_id'],user_id=request.args['user_id'])
   user = User.query.get(request.args['user_id'])
   if favorite.first() is None:
-    return API_Response(70).as_json()
+    return API_Response(FAVORITE_DOES_NOT_EXIST).as_json()
   favorite.delete()
   db.session.commit()
-  return API_Response(20).as_json()
+  return API_Response(SUCCESS).as_json()
 

@@ -32,7 +32,7 @@ class API_Response:
       return {"meta"    : {"status":self.status,"error":self.error},
               "objects" : self.objs}
     else:
-      return {"meta" : {"status":self.status},"objects":self.objs}
+      return {"meta"    : {"status":self.status},"objects":self.objs}
 
   def as_json(self):
     return jsonify(self.as_dict())

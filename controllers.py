@@ -11,6 +11,7 @@ SUCCESS                 = 20
 EMAIL_EXISTS            = 30
 USERNAME_EXISTS         = 31
 INVALID_AUTH            = 32
+USERNAME_DOES_NOT_EXIST = 33
 SONG_DOES_NOT_EXIST     = 40
 BLIP_DOES_NOT_EXIST     = 50
 COMMENT_DOES_NOT_EXIST  = 60
@@ -22,6 +23,7 @@ STATUS_CODE_MESSAGES = {
   EMAIL_EXISTS            : "Email already exists",
   USERNAME_EXISTS         : "Username already exists",
   INVALID_AUTH            : "Invalid Authentication",
+  USERNAME_DOES_NOT_EXIST : "Username does not exist",
   SONG_DOES_NOT_EXIST     : "Song ID does not exist",
   BLIP_DOES_NOT_EXIST     : "Blip ID does not exist",
   COMMENT_DOES_NOT_EXIST  : "Comment ID does not exist",
@@ -74,6 +76,8 @@ def require_authentication(fn):
         user = User.query.filter_by(id=request.values[u_field]).first()
       elif u_field == 'username':
         user = User.query.filter_by(name=request.values[u_field]).first()
+        if not user:
+          return API_Response(USERNAME_DOES_NOT_EXIST).as_json()
       if not user or not user.check_password(request.values['password']):
         return API_Response(INVALID_AUTH).as_json()
       return fn()

@@ -266,7 +266,7 @@ class latituneTestCase(unittest.TestCase):
     assert ast.literal_eval(rv.data) == {"meta":{"status":32,"error":"Invalid Authentication"},"objects":[]}
 
     rv = self.app.get('/api/user?username=ben2&password=testpass')
-    assert ast.literal_eval(rv.data) == {"meta":{"status":32,"error":"Invalid Authentication"},"objects":[]}
+    assert ast.literal_eval(rv.data) == {"meta":{"status":33,"error":"Username does not exist"},"objects":[]}
 
   """ Song """
 

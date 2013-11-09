@@ -44,25 +44,15 @@ class Song(db.Model):
   artist           = db.Column(db.String(80))
   title            = db.Column(db.String(120))
   album            = db.Column(db.String(80))
-  provider_song_id = db.Column(db.String(200))
-  provider_key     = db.Column(db.Enum('Spotify','Youtube',
-                                       name='provider_key'))
+  echonestID       = db.Column(db.String(20))
   blip             = db.relationship("Blip", backref="song")
+  providers        = db.relationship("SongProvider")
 
-  def __init__(self, artist, title, album="", provider_key="Youtube"):
+  def __init__(self, artist, title, echonest_id, album=""):
     self.artist = artist
     self.title  = title
     self.album  = album
-
-    query = gdata.youtube.service.YouTubeVideoQuery()
-    query.vq = title + " " + artist
-    query.orderby = 'relevance'
-    query.racy = 'include'
-    feed = yt_service.YouTubeQuery(query)
-    entry = feed.entry[0]
-    self.provider_song_id = entry.id.text.split('/')[-1]
-
-    self.provider_key = provider_key
+    self.echonestID = echonest_id
 
   @property
   def serialize(self):
@@ -71,10 +61,29 @@ class Song(db.Model):
       'artist'           : self.artist,
       'title'            : self.title,
       'album'            : self.album,
-      'provider_song_id' : self.provider_song_id,
-      'provider_key'     : str(self.provider_key)
+      'echonestID'       : self.echonestID,
+      'providers'        : [p.serialize for p in self.providers]
     }
 
+class SongProvider(db.Model):
+  __tablename__ = "song_provider"
+
+  id = db.Column(db.Integer, primary_key = True)
+  song_id = db.Column(db.Integer, db.ForeignKey('song.id'))
+  provider = db.Column(db.Enum("Rdio", "Spotify", name="provider"))
+  provider_key = db.Column(db.String(50))
+
+  def __init__(self, song_id, provider, provider_key):
+    self.song_id = song_id
+    self.provider = provider
+    self.provider_key = provider_key
+
+  @property
+  def serialize(self):
+    return {
+      'provider':self.provider,
+      'provider_key':self.provider_key
+    }  
 
 class Blip(db.Model):
   __tablename__ = 'blip'

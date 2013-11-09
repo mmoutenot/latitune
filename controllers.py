@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request
 from sqlalchemy.exc import IntegrityError
 from settings import *
 from models import *
+from pyechonest import song
 
 MISSING_PARAMETERS      = 10
 SUCCESS                 = 20
@@ -27,7 +28,8 @@ STATUS_CODE_MESSAGES = {
   SONG_DOES_NOT_EXIST     : "Song ID does not exist",
   BLIP_DOES_NOT_EXIST     : "Blip ID does not exist",
   COMMENT_DOES_NOT_EXIST  : "Comment ID does not exist",
-  FAVORITE_DOES_NOT_EXIST : "Favorite ID does not exist"
+  FAVORITE_DOES_NOT_EXIST : "Favorite ID does not exist",
+  "ERR"                     : "You fucked up"
 }
 
 ##
@@ -68,6 +70,8 @@ def require_authentication(fn):
   @functools.wraps(fn)
   def wrap():
     user_fields = ['user_id', 'username']
+    if len([u_f for u_f in user_fields if u_f in request.values]) == 0:
+      return API_Response(MISSING_PARAMETERS).as_json()
     u_field = [u_f for u_f in user_fields if u_f in request.values][0]
     if u_field and not all ([arg in request.values for arg in [u_field, 'password']]):
       return API_Response(MISSING_PARAMETERS).as_json()
@@ -175,17 +179,29 @@ def create_blip():
 # SONG
 
 @app.route("/api/song",methods=['PUT'])
-@check_arguments(['artist','title'])
+@check_arguments(['artist','title','echonest_id','album'])
 def create_song():
   try:
     new_song = Song.query.filter_by(artist=request.form['artist'],
                                     title=request.form['title']).first()
     if not new_song:
-      new_song = Song(request.form['artist'], request.form['title'])
+      new_song = Song(request.form['artist'], request.form['title'], request.form['echonest_id'],request.form['album'])
       db.session.add(new_song)
+      db.session.commit()
+      ss_results = song.profile(ids=new_song.echonestID, buckets=['id:rdio-US','id:spotify-WW'])
+      for ensong in ss_results:
+        for rdioTrack in ensong.get_tracks('rdio-US'):
+          trackID = rdioTrack["foreign_id"].split(":")[2]
+          new_songprovider = SongProvider(new_song.id, "Rdio", trackID)
+          db.session.add(new_songprovider)
+        for spotifyTrack in ensong.get_tracks('spotify-WW'):
+          trackID = spotifyTrack["foreign_id"].split(":")[2]
+          new_songprovider = SongProvider(new_song.id, "Spotify", trackID)
+          db.session.add(new_songprovider)
       db.session.commit()
     return API_Response(SUCCESS, [new_song.serialize]).as_json()
   except Exception as e:
+    print e
     return API_Response("ERR", [], request.form).as_json()
   return None
 

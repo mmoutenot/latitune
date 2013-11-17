@@ -6,35 +6,36 @@ import os
 import sys
 from settings import *
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
   __tablename__ = 'user'
 
   id      = db.Column(db.Integer, primary_key = True)
-  name    = db.Column(db.String(80), unique = True)
-  email   = db.Column(db.String(120), unique = True)
-  pw_hash = db.Column(db.String(120))
+  first_name    = db.Column(db.String(120))
+  last_name  = db.Column(db.String(120))
+  rdio_key = db.Column(db.String(50), unique=True)
+  url = db.Column(db.String(120))
+  icon = db.Column(db.String(120))
+  email = db.Column(db.String(120))
   blip    = db.relationship("Blip", backref="user")
 
-  def __init__(self, name, email, password):
-    self.name = name
+  def __init__(self, first_name, last_name, email, rdio_key, url, icon):
+    self.first_name = first_name
+    self.last_name = last_name
+    self.rdio_key = rdio_key
+    self.url = url
+    self.icon = icon
     self.email = email
-    self.set_password(password)
-
-  def set_password(self, password):
-    self.pw_hash = generate_password_hash(password)
-
-  def check_password(self, password):
-    return check_password_hash(self.pw_hash, password)
 
   @property
   def serialize(self):
     """Return object data in easily serializeable format"""
     return {
       'id' : self.id,
-      'name' : self.name,
-      'email' :self.email,
+      'name' : self.first_name + " " +  self.last_name,
+      'rdio_key' : self.rdio_key,
+      'url': self.url,
+      'icon' : self.icon
     }
 
 class Song(db.Model):
@@ -95,9 +96,9 @@ class Blip(db.Model):
   latitude  = db.Column(db.Float)
   timestamp = db.Column(db.DateTime, default=datetime.now)
 
-  def __init__(self, song_id, user_id, longitude, latitude):
+  def __init__(self, song_id, user, longitude, latitude):
     self.song_id   = song_id
-    self.user_id   = user_id
+    self.user_id   = user.id
     self.longitude = longitude
     self.latitude  = latitude
 
@@ -122,8 +123,8 @@ class Comment(db.Model):
   comment   = db.Column(db.Text)
   timestamp = db.Column(db.DateTime, default=datetime.now)
 
-  def __init__(self, user_id,blip_id,comment):
-    self.user_id = user_id
+  def __init__(self, user, blip_id, comment):
+    self.user_id = user.id
     self.blip_id = blip_id
     self.comment = comment
 
@@ -145,8 +146,8 @@ class Favorite(db.Model):
   user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
   blip_id = db.Column(db.Integer, db.ForeignKey('blip.id'))
 
-  def __init__(self, user_id, blip_id):
-    self.user_id = user_id
+  def __init__(self, user, blip_id):
+    self.user_id = user.id
     self.blip_id = blip_id
 
   @property 

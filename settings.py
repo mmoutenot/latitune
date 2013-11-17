@@ -25,7 +25,6 @@ rdio_shared_secret = "hs68psbjtH"
 
 config.ECHO_NEST_API_KEY=echonest_api_key
 
-
 app       = Flask (__name__)
 if os.environ.get('LATITUNE_LOCAL') == "true":
   print 'running in developer mode for latitune'
